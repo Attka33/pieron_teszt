@@ -207,11 +207,7 @@
       <p id="resultText"></p>
       
       <div id="sendStatus" style="margin-top:10px; font-size:0.95rem; color:#ddd;"></div>
-      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-        <button type="button" onclick="copyResultsToClipboard()">Eredmény másolása</button>
-        <button type="button" onclick="resetTest()">Újraindítás</button>
-      </div>
-    </div>
+</div>
   </div>
 
 <script>
@@ -416,25 +412,12 @@
     } catch (err) {
       safeSetSendStatus(
         "❌ Nem sikerült elküldeni az eredményt. " +
-        "Kérlek másold ki az eredményt (Eredmény másolása), és küldd el nekem manuálisan."
+        "Kérlek jelezd a hibát a kutatásvezetőnek, és próbáld meg frissítés után újra kitölteni a tesztet."
       );
       console.error("Eredményküldés hiba:", err);
     }
   }
 
-  // ----------------- VÁGÓLAP MÁSOLÁS -----------------
-  async function copyResultsToClipboard() {
-    const text = resultText ? resultText.innerText : "";
-    if (!text) return;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      safeSetSendStatus("📋 Eredmény a vágólapra másolva.");
-    } catch (err) {
-      window.prompt("Másold ki az alábbi szöveget:", text);
-      safeSetSendStatus("📋 Ha nem ment automatikusan, kézzel másolható a felugró ablakból.");
-    }
-  }
 
 function startTest() {
     if (started) return;
@@ -661,21 +644,6 @@ const payload = {
     // Eredmények elküldése a Sheetbe (ha be van állítva)
     sendResultsToSheet(payload);
   }
-
-  // ----------------- TESZT ÚJRAINDÍTÁSA -----------------
-  function resetTest() {
-    // Overlay elrejtése, állapotok visszaállítása
-    overlay.style.display = "none";
-    safeSetSendStatus("");
-    started = false;
-    currentIndex = -1;
-    timeLeft = DURATION_SECONDS;
-
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-
     // „Teszt indítása” gomb újra engedélyezése
     startBtn.disabled = false;
 
@@ -687,7 +655,6 @@ const payload = {
 
     // Új teszt előtt megint ne látszódjon, csak indítás után
     gridDiv.classList.remove("visible", "mouse-disabled");
-  }
 
   // ----------------- BILLENTYŰZETKEZELÉS -----------------
   // SPACE / ENTER: jelölés (végleges), jobbra nyíl: léptetés
