@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Pieron-jellegű figyelemteszt</title>
+  <style>
+    :root {
+      /* Itt lehet egy helyen állítani a szimbólumok méretét (minták + táblázat) */
+      --symbol-font-size: 16px;
+      --cell-size: 33px;
+    }
+
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+    }
+
+    .task-description {
+  text-align: justify;
+  hyphens: auto;
+  }
+
+    /* A fő rács (tábla), kezdetben rejtve */
+    #grid {
+      display: none;                         /* induláskor ne látszódjon */
+      grid-template-columns: repeat(20, var(--cell-size));
+      gap: 3px;                              /* rácsköz, hogy a keretek ne érjenek össze */
+      margin-top: 10px;
+      justify-content: center;               /* rács középre igazítása */
+    }
+
+    /* Ha a teszt elindul, ezt az osztályt kapja, ekkor jelenik meg */
+    #grid.visible {
+      display: grid;
+    }
+
+    /* Teszt közben az egérkattintások letiltása (csak billentyűzetes vezérlés) */
+    #grid.mouse-disabled {
+      pointer-events: none;
+    }
+
+    /* Szimbólumok betűtípusa, mérete */
+    .symbol {
+      font-family: "Segoe UI Symbol", "Noto Sans Symbols", "DejaVu Sans", sans-serif;
+      font-size: var(--symbol-font-size);
+      line-height: 1;
+    }
+
+    /* Egy cella (négyzet) a rácsban */
+    .cell {
+      border: 0.5px solid #ddd;
+      text-align: center;
+      user-select: none;
+
+      width: var(--cell-size);
+      height: var(--cell-size);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    /* Kijelölt cella – vastagabb fekete keret */
+    .cell.selected {
+      box-shadow: 0 0 0 2px #000;
+    }
+
+    /* Billentyűzetes „kurzor” pozíció jelölése */
+    .cell.cursor {
+      box-shadow: 0 0 0 2px #007bff inset;
+    }
+
+    /* Felső sáv: gomb, időcsík, minták */
+    #top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    #startBtn {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    #startBtn:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+
+    /* Alsó sáv – jelenleg üres, de meghagyjuk, ha később kellene ide bármi */
+    #bottom-bar {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* Eredmény overlay (sötétített háttér) */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;               /* csak a végén látszik */
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.3rem;
+    }
+
+    #overlay-inner {
+      background: #222;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      text-align: left;
+    }
+
+    /* Időcsík tartó */
+    #timeBarContainer {
+      width: 200px;
+      height: 12px;
+      background: #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      margin-left: 10px;
+      display: inline-block;
+    }
+
+    /* Maga a fogyó zöld csík */
+    #timeBar {
+      position: absolute;
+      right: 0;             /* ITT rögzítjük a jobb oldalhoz */
+      top: 0;
+      height: 100%;
+      width: 100%;  /* induláskor teljesen tele */
+      background: linear-gradient(to right, #4caf50, #8bc34a);
+      transition: width 1s linear; /* szép „folyós” fogyás */
+    }
+
+  
+/* ---- Eredmény táblázat (egyetemi normák) ---- */
+.result-table{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 1rem;
+}
+.result-table th, .result-table td{
+  border: 1px solid #555;
+  padding: 6px 8px;
+}
+.result-table th{
+  text-align: left;
+  font-weight: 600;
+}
+.grade-cell{
+  text-align: center;
+  font-weight: 700;
+  border: 2px solid #fff; /* kiemelés */
+}
+
+</style>
+</head>
+<body>
+
+  <h2 style="text-align: center;">Pieron-jellegű figyelemteszt</h2>
+
+  <p class="task-description">
+    Feladat leírása: a <strong>"Teszt indítása"</strong> után felugró mezőben add meg a mintának megfelelően a neved. Az "OK" gombra kattintás után megjelenő táblázatban
+    <strong>keresd meg azokat az alakzatokat, amelyek megegyeznek a mintában szereplőkkel</strong>,
+    és az ENTER/SPACE billentyű lenyomásával jelöld ki őket.
+    <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
+    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>.
+    A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz. Időkeret: <strong>5 perc</strong>.
+  </p>
+
+  <div id="top-bar">
+    <button id="startBtn">Teszt indítása</button>
+
+    <div>
+      <strong>Hátralévő idő:</strong>
+      <div id="timeBarContainer">
+        <div id="timeBar"></div>
+      </div>
+    </div>
+
+    <div>
+      <strong>Minták:</strong>
+      <span id="targetsDisplay"></span>
+    </div>
+  </div>
+
+  <!-- A szimbólumrács (tábla) -->
+  <div id="grid"></div>
+
+  <!-- Alsó sáv – jelenleg üres -->
+  <div id="bottom-bar"></div>
+
+  <!-- Eredményeket mutató felugró doboz -->
+  <div id="overlay">
+    <div id="overlay-inner">
+      <h2>Eredmény</h2>
+      <p id="resultText"></p>
+      
+      <div id="sendStatus" style="margin-top:10px; font-size:0.95rem; color:#ddd;"></div>
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" onclick="copyResultsToClipboard()">Eredmény másolása</button>
+        <button type="button" onclick="resetTest()">Újraindítás</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ----------------- PARAMÉTEREK -----------------
+  const ROWS = 20;
+  const COLS = 20;
+  const DURATION_SECONDS = 300; // 5 perc
+
+  // ----------------- EREDMÉNYKÜLDÉS (Google Apps Script Web App) -----------------
+  // Ide másold be a Deploy után kapott "Web app URL"-t (Google Apps Script)
+  const RESULTS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxMe-JhwR_6DStcjKwYAMtofsMyvvP0ucQwj_93KFFK9V64AqytMUJ9HWkhIs9kWq7I/exec";
+  // „Minták” – ezekre kell figyelni (ezek a céljelek)
+  const TARGET_SYMBOLS = ["■", "▲", "○", "◇"];
+
+  // A lehetséges szimbólumok (köztük a céljelek)
+  const SYMBOL_POOL = ["■", "▲", "●", "◆", "□", "△", "○", "◇"];
+  const NON_TARGET_SYMBOLS = SYMBOL_POOL.filter(s => !TARGET_SYMBOLS.includes(s));
+
+  // Fix arány: ahány céljel van a SYMBOL_POOL-ban, olyan arányban legyen a táblázatban is
+  const TARGET_RATIO = TARGET_SYMBOLS.length / SYMBOL_POOL.length;
+
+  // ----------------- ÁLLAPOTVÁLTOZÓK -----------------
+  let gridData = [];       // a rács cellái: {symbol, isTarget, selected}
+  let started = false;     // fut-e már a teszt
+  let timeLeft = DURATION_SECONDS;
+  let timerInterval = null;
+  let currentIndex = -1;   // Billentyűzetes "kurzor" pozíciója (0..ROWS*COLS-1)
+  let anonId = "";        // Kitöltő anonim azonosítója (Startnál kérjük be)
+
+  // ----------------- DOM ELEMEK -----------------
+  const gridDiv = document.getElementById("grid");
+  const startBtn = document.getElementById("startBtn");
+  const overlay = document.getElementById("overlay");
+  const resultText = document.getElementById("resultText");
+  const targetsDisplay = document.getElementById("targetsDisplay");
+  const timeBar = document.getElementById("timeBar");
+  const sendStatus = document.getElementById("sendStatus");
+
+  // Induláskor állítsuk 100%-ra az időcsíkot
+  timeBar.style.width = "100%";
+
+  // Céljelek kiírása, azonos stílussal, mint a táblázatban
+  targetsDisplay.innerHTML = TARGET_SYMBOLS
+    .map(s => `<span class="symbol">${s}</span>`)
+    .join('&nbsp;&nbsp;&nbsp;');
+
+  // ----------------- SEGÉDFÜGGVÉNY: egyszerű keverő -----------------
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // ----------------- RÁCS GENERÁLÁSA -----------------
+  function generateGrid() {
+    gridData = [];
+    gridDiv.innerHTML = "";
+
+    const totalCells = ROWS * COLS;
+    const targetCount = Math.round(totalCells * TARGET_RATIO);
+
+    // Véletlen pozíciók kiválasztása a céljelekhez
+    const indices = Array.from({ length: totalCells }, (_, i) => i);
+    shuffle(indices);
+    const targetPositions = new Set(indices.slice(0, targetCount));
+
+    for (let i = 0; i < totalCells; i++) {
+      const isTarget = targetPositions.has(i);
+      const pool = isTarget ? TARGET_SYMBOLS : NON_TARGET_SYMBOLS;
+      const symbol = pool[Math.floor(Math.random() * pool.length)];
+
+      // Belső adatstruktúra feltöltése
+      gridData.push({ symbol, isTarget, selected: false });
+
+      // DOM elem létrehozása
+      const cell = document.createElement("div");
+      cell.className = "cell symbol";
+      cell.textContent = symbol;
+      cell.dataset.index = i;
+
+      // Egérkattintás teljes tiltása (csak billentyűvel lehessen jelölni)
+      cell.addEventListener("click", (e) => {
+        e.preventDefault();
+        return false;
+      });
+
+      gridDiv.appendChild(cell);
+    }
+
+    // Kurzor alaphelyzetben „nincs sehol”
+    currentIndex = -1;
+    updateCursor();
+  }
+
+  // ----------------- KURZOR FRISSÍTÉSE -----------------
+  function updateCursor() {
+    const cells = gridDiv.querySelectorAll(".cell");
+    cells.forEach(c => c.classList.remove("cursor"));
+
+    if (currentIndex >= 0 && currentIndex < cells.length) {
+      cells[currentIndex].classList.add("cursor");
+    }
+  }
+
+  // ----------------- AKTUÁLIS CELLA JELÖLÉSE -----------------
+  function toggleCurrentCell() {
+    if (!started) return;
+    if (currentIndex < 0) return;
+
+    const cellData = gridData[currentIndex];
+    const cellElement = gridDiv.querySelector(`.cell[data-index="${currentIndex}"]`);
+    if (!cellElement) return;
+
+    // Ha már egyszer jelölve lett, ne lehessen visszavonni
+    if (cellData.selected) {
+      return;
+    }
+
+    // Jelölés beállítása
+    cellData.selected = true;
+    cellElement.classList.add("selected");
+
+    // Jelölés után automatikusan a következő cellára lép
+    moveToNextCell();
+  }
+
+  // ----------------- TOVÁBBLÉPÉS A KÖVETKEZŐ CELLÁRA -----------------
+  function moveToNextCell() {
+    if (!started) return;
+    const cells = gridDiv.querySelectorAll(".cell");
+    if (cells.length === 0) return;
+
+    // Ha még nem állunk sehol, az első cellával kezdünk
+    if (currentIndex === -1) {
+      currentIndex = 0;
+    } else if (currentIndex < cells.length - 1) {
+      // Csak jobbra lehet lépni, vissza nem
+      currentIndex++;
+    } else {
+      // Már az utolsó cellán állunk, újabb lépés = automatikus befejezés
+      finishTest("auto");
+      return;
+    }
+
+    updateCursor();
+  }
+
+  // ----------------- TESZT INDÍTÁSA -----------------
+  
+  // ----------------- EGYETEMI NORMÁK SZERINTI MINŐSÍTÉS -----------------
+  // n (átnézett elemszám) és T% (pontosság) alapján ad vissza osztályzatot
+  function gradeByN(n) {
+    if (n < 330) return "gyenge";
+    if (n < 360) return "elégséges";
+    if (n < 380) return "közepes";
+    if (n < 390) return "jó";
+    return "kiváló";
+  }
+
+  function gradeByT(tPercent) {
+    if (tPercent < 90) return "gyenge";
+    if (tPercent < 94) return "elégséges";
+    if (tPercent < 96.5) return "közepes";
+    if (tPercent < 98.5) return "jó";
+    return "kiváló";
+  }
+
+
+  // ----------------- EREDMÉNYKÜLDÉS SEGÉD -----------------
+  function safeSetSendStatus(htmlText) {
+    if (!sendStatus) return;
+    sendStatus.innerHTML = htmlText;
+  }
+
+  // Megpróbálja elküldeni az eredményeket a Google Apps Script Web App URL-re.
+  // Megjegyzés: statikus (GitHub Pages/Netlify) környezetben a "no-cors" mód a legstabilabb,
+  // ezért a válasz tartalmát nem tudjuk kiolvasni, de a kérés jellemzően célba ér.
+  async function sendResultsToSheet(payload) {
+    // Ha nincs beállítva az endpoint, ne próbálkozzunk.
+    if (!RESULTS_ENDPOINT || RESULTS_ENDPOINT.includes("IDE_MÁSOLOD")) {
+      safeSetSendStatus(
+        '⚠️ <strong>Nincs beállítva a Web app URL.</strong><br>' +
+        'A RESULTS_ENDPOINT változóba másold be a Google Apps Script "Web app URL"-t.'
+      );
+      return;
+    }
+
+    safeSetSendStatus("⏳ Eredmény elküldése folyamatban…");
+
+    try {
+      await fetch(RESULTS_ENDPOINT, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      // "no-cors" esetén nem tudjuk ellenőrizni a választ, ezért csak tájékoztatunk.
+      safeSetSendStatus("✅ Eredmény elküldve.");
+    } catch (err) {
+      safeSetSendStatus(
+        "❌ Nem sikerült elküldeni az eredményt. " +
+        "Kérlek másold ki az eredményt (Eredmény másolása), és küldd el nekem manuálisan."
+      );
+      console.error("Eredményküldés hiba:", err);
+    }
+  }
+
+  // ----------------- VÁGÓLAP MÁSOLÁS -----------------
+  async function copyResultsToClipboard() {
+    const text = resultText ? resultText.innerText : "";
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      safeSetSendStatus("📋 Eredmény a vágólapra másolva.");
+    } catch (err) {
+      window.prompt("Másold ki az alábbi szöveget:", text);
+      safeSetSendStatus("📋 Ha nem ment automatikusan, kézzel másolható a felugró ablakból.");
+    }
+  }
+
+function startTest() {
+    if (started) return;
+
+    // Anonim azonosító bekérése (erősen ajánlott az eredmények későbbi beazonosításához)
+    // Ha nem szeretnél kérni, hagyd üresen és a Sheetben marad üres.
+    if (!anonId) {
+      const entered = window.prompt("Add meg a vezetékneved + a keresztneved kezdőbetűjét (pl.: Nagy F):", "");
+      if (entered && entered.trim()) {
+        anonId = entered.trim();
+      }
+    }
+
+    started = true;
+
+    startBtn.disabled = true;
+
+    // A táblázat most jelenjen meg, és tiltsuk az egeret
+    gridDiv.classList.add("visible", "mouse-disabled");
+
+    timeLeft = DURATION_SECONDS;
+
+    // Induláskor az első cellán álljon a „kurzor”
+    currentIndex = 0;
+    updateCursor();
+
+    // Időcsík visszatöltése induláskor
+    timeBar.style.width = "100%";
+
+    // Másodpercenként csökkentjük az időt, és frissítjük az időcsíkot
+    timerInterval = setInterval(() => {
+      timeLeft--;
+
+      const ratio = timeLeft / DURATION_SECONDS;
+      const widthPercent = Math.max(0, ratio * 100);
+      timeBar.style.width = widthPercent + "%";
+
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        finishTest("time");
+      }
+    }, 1000);
+  }
+
+  // ----------------- TESZT BEFEJEZÉSE -----------------
+  // reason: "time" (idő lejárt) vagy "auto" (a táblázat végére ért)
+  function finishTest(reason) {
+    if (!started && reason !== "time" && reason !== "auto") return;
+
+    started = false;
+
+    // Időzítő leállítása, ha még futna
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    const elapsed = DURATION_SECONDS - timeLeft;
+    const remaining = timeLeft < 0 ? 0 : timeLeft;
+
+    let reasonText = "";
+    if (reason === "time") {
+      reasonText = "Az idő lejárt.";
+    } else if (reason === "auto") {
+      reasonText = "A táblázat végére értél, a teszt automatikusan lezárult.";
+    }
+
+    // ----------------- KIÉRTÉKELÉS -----------------
+    let hits = 0;        // helyes jelölés (cél + kijelölt)
+    let misses = 0;      // kihagyott cél
+    let falseAlarms = 0; // rossz jelölés (nem cél, de kijelölt)
+
+    gridData.forEach(c => {
+      if (c.isTarget && c.selected) hits++;
+      if (c.isTarget && !c.selected) misses++;
+      if (!c.isTarget && c.selected) falseAlarms++;
+    });
+
+    // Feldolgozott elemnek számít minden céljel + minden jelölt
+    const processed = gridData.filter(c => c.selected || c.isTarget).length;
+
+    // Átnézett elemek száma (n): az utolsó elért index + 1
+    const itemsSeen = currentIndex >= 0 ? currentIndex + 1 : 0;
+
+    // Hibák száma (h): kihagyott céljelek + téves jelölések
+    const h = misses + falseAlarms;
+
+    // Pieron-féle pontosság (T%) az átnézett elemszámhoz viszonyítva
+    const tPercent = itemsSeen > 0 ? ((itemsSeen - h) * 100) / itemsSeen : 0;
+
+    // Egyetemi normák szerinti osztályzatok
+    const gradeN = gradeByN(itemsSeen);
+    const gradeT = gradeByT(tPercent);
+
+    // ----------------- KIEGÉSZÍTŐ MUTATÓK (Sheet oszlopokhoz) -----------------
+// Sebesség (elem/perc) az átnézett elemszám alapján
+const speedEpm = elapsed > 0 ? (itemsSeen / (elapsed / 60)) : 0;
+
+// Hibaarány (összes hiba / átnézett elemszám)
+const errorRate = itemsSeen > 0 ? (h / itemsSeen) : 0;
+
+// Kihagyási arány (kihagyott cél / összes cél)
+const missRate = (hits + misses) > 0 ? (misses / (hits + misses)) : 0;
+
+// Téves jelölési arány (téves jelölés / átnézett elemszám)
+const faRate = itemsSeen > 0 ? (falseAlarms / itemsSeen) : 0;
+
+// Kihagyás vs. téves jelölés (különbség)
+const missVsFa = missRate - faRate;
+
+// Fáradási mintázat: az átnézett elemek első 20%-a vs. utolsó 20%-a
+function segmentStats(fromIdx, toIdxExclusive) {
+  let segHits = 0, segMisses = 0, segFAs = 0;
+  for (let i = fromIdx; i < toIdxExclusive; i++) {
+    const c = gridData[i];
+    if (!c) continue;
+    if (c.isTarget && c.selected) segHits++;
+    if (c.isTarget && !c.selected) segMisses++;
+    if (!c.isTarget && c.selected) segFAs++;
+  }
+  const segN = Math.max(0, toIdxExclusive - fromIdx);
+  const segErrors = segMisses + segFAs;
+  const segAcc = segN > 0 ? ((segN - segErrors) / segN) : 0; // 0..1
+  return { segN, segHits, segMisses, segFAs, segAcc };
+}
+
+function fatiguePatternBy20Pct(nSeen) {
+  if (nSeen < 5) return "insufficient_data"; // túl kevés elem a stabil mintázathoz
+  const part = Math.max(1, Math.floor(nSeen * 0.2));
+  const first = segmentStats(0, part);
+  const last = segmentStats(nSeen - part, nSeen);
+
+  const deltaAccPct = (last.segAcc - first.segAcc) * 100; // %-pont
+  // Egyszerű kategorizálás (küszöb: 5 %-pont)
+  let label = "stabil";
+  if (deltaAccPct <= -5) label = "romló";
+  else if (deltaAccPct >= 5) label = "javuló";
+
+  // Kompakt, de információgazdag string a Sheetbe
+  return `${label};acc_first=${(first.segAcc*100).toFixed(1)};acc_last=${(last.segAcc*100).toFixed(1)};dAcc=${deltaAccPct.toFixed(1)}`;
+}
+
+const fatigePat = fatiguePatternBy20Pct(itemsSeen);
+
+// Sebesség–pontosság profil (egyszerű kategóriák fix küszöbökkel)
+// Küszöbök: 72 elem/perc ~ 360 elem / 5 perc, pontosság: 95%
+function speedAccuracyProfile(spdEpm, tPct) {
+  const fast = spdEpm >= 72;
+  const accurate = tPct >= 95;
+  if (fast && accurate) return "gyors-pontos";
+  if (fast && !accurate) return "gyors-pontatlan";
+  if (!fast && accurate) return "lassú-pontos";
+  return "lassú-pontatlan";
+}
+
+const spdAccProfil = speedAccuracyProfile(speedEpm, tPercent);
+
+// ----------------- EREDMÉNYEK ÖSSZEÁLLÍTÁSA ÉS KÜLDÉSE -----------------
+const payload = {
+  timestamp: new Date().toISOString(),
+  anon_id: anonId || "",
+  used_sec: elapsed,
+  rem_sec: remaining,
+
+  processed: processed,
+  hits: hits,
+  misses: misses,
+  falseAlarms: falseAlarms,
+
+  n_scan: itemsSeen,
+  t_percent: Number(tPercent.toFixed(1)),
+  speed_emp: Number(speedEpm.toFixed(2)),
+  error_rate: Number(errorRate.toFixed(4)),
+
+  miss_rate: Number(missRate.toFixed(4)),
+  fa_rate: Number(faRate.toFixed(4)),
+  miss_vs_fa: Number(missVsFa.toFixed(4)),
+
+  fatige_pat: fatigePat,
+  spd_acc_profil: spdAccProfil
+};
+
+    // Eredmény szöveg összeállítása
+    resultText.innerHTML = `
+      ${reasonText ? reasonText + "<br><br>" : ""}
+      Felhasznált idő: <strong>${elapsed}</strong> mp<br>
+      Hátralévő idő: <strong>${remaining}</strong> mp<br><br>
+
+      Feldolgozott elemek (cél + jelölt): <strong>${processed}</strong><br>
+      Helyes találatok: <strong>${hits}</strong><br>
+      Kihagyott céljelek: <strong>${misses}</strong><br>
+      Téves jelölések: <strong>${falseAlarms}</strong><br><br>
+
+      Sebesség: <strong>${speedEpm.toFixed(2)}</strong> elem/perc<br>
+      Hibaarány: <strong>${(errorRate*100).toFixed(1)}%</strong><br>
+      Kihagyási arány: <strong>${(missRate*100).toFixed(1)}%</strong><br>
+      Téves jelölési arány: <strong>${(faRate*100).toFixed(1)}%</strong><br>
+      Fáradási mintázat: <strong>${fatigePat.split(';')[0]}</strong><br>
+      Sebesség–pontosság profil: <strong>${spdAccProfil}</strong><br>
+
+      <table class="result-table" aria-label="Egyetemi normák szerinti minősítés">
+        <tr>
+          <th>Mutató</th>
+          <th>Érték</th>
+          <th>Minősítés</th>
+        </tr>
+        <tr>
+          <td>n (átnézett elemszám)</td>
+          <td style="text-align:center;"><strong>${itemsSeen}</strong></td>
+          <td class="grade-cell">${gradeN}</td>
+        </tr>
+        <tr>
+          <td>T% (pontosság)</td>
+          <td style="text-align:center;"><strong>${tPercent.toFixed(1)}%</strong></td>
+          <td class="grade-cell">${gradeT}</td>
+        </tr>
+      </table>
+    `;
+
+    // Overlay megjelenítése
+    overlay.style.display = "flex";
+
+    // Eredmények elküldése a Sheetbe (ha be van állítva)
+    sendResultsToSheet(payload);
+  }
+
+  // ----------------- TESZT ÚJRAINDÍTÁSA -----------------
+  function resetTest() {
+    // Overlay elrejtése, állapotok visszaállítása
+    overlay.style.display = "none";
+    safeSetSendStatus("");
+    started = false;
+    currentIndex = -1;
+    timeLeft = DURATION_SECONDS;
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    // „Teszt indítása” gomb újra engedélyezése
+    startBtn.disabled = false;
+
+    // Időcsík azonnali visszatöltése 100%-ra
+    timeBar.style.width = "100%";
+
+    // Új, véletlen táblázat ugyanazzal az aránnyal
+    generateGrid();
+
+    // Új teszt előtt megint ne látszódjon, csak indítás után
+    gridDiv.classList.remove("visible", "mouse-disabled");
+  }
+
+  // ----------------- BILLENTYŰZETKEZELÉS -----------------
+  // SPACE / ENTER: jelölés (végleges), jobbra nyíl: léptetés
+  document.addEventListener("keydown", (e) => {
+    if (!started) return;
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      moveToNextCell();
+    } else if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      toggleCurrentCell();
+    }
+  });
+
+  // ----------------- INDULÁSKOR: TÁBLA ELŐKÉSZÍTÉSE -----------------
+  generateGrid();
+  startBtn.addEventListener("click", startTest);
+</script>
+
+</body>
+</html>
