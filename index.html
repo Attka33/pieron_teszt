@@ -62,9 +62,16 @@
       box-sizing: border-box;
     }
 
-    /* Kijelölt cella – vastagabb fekete keret */
+    /* Kijelölt cella – fekete keret a kereten BELÜL (nem nő meg a cella) */
     .cell.selected {
-      box-shadow: 0 0 0 2px #000;
+      box-shadow: 0 0 0 2px #000 inset;
+    }
+
+    /* Ha véletlenül egyszerre lenne kijelölés + kurzor, mindkettő látszódjon */
+    .cell.selected.cursor {
+      box-shadow:
+        0 0 0 2px #007bff inset,  /* belső kék kurzor */
+        0 0 0 4px #000 inset;     /* belső fekete kijelölés */
     }
 
     /* Billentyűzetes „kurzor” pozíció jelölése */
