@@ -553,7 +553,7 @@ function segmentStats(fromIdx, toIdxExclusive) {
 }
 
 function fatiguePatternBy20Pct(nSeen) {
-  if (nSeen < 5) return "insufficient_data"; // túl kevés elem a stabil mintázathoz
+  if (nSeen < 5) return "túl kevés elem a stabil mintázathoz"; 
   const part = Math.max(1, Math.floor(nSeen * 0.2));
   const first = segmentStats(0, part);
   const last = segmentStats(nSeen - part, nSeen);
