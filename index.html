@@ -494,23 +494,46 @@ function startTest() {
     }
 
     // ----------------- KIÉRTÉKELÉS -----------------
-    let hits = 0;        // helyes jelölés (cél + kijelölt)
-    let misses = 0;      // kihagyott cél
-    let falseAlarms = 0; // rossz jelölés (nem cél, de kijelölt)
-
-    gridData.forEach(c => {
-      if (c.isTarget && c.selected) hits++;
-      if (c.isTarget && !c.selected) misses++;
-      if (!c.isTarget && c.selected) falseAlarms++;
-    });
-
-    // Feldolgozott elemnek számít minden céljel + minden jelölt
-    const processed = gridData.filter(c => c.selected || c.isTarget).length;
+    // Fontos: ha a kitöltő nem jut el a táblázat végéig (n_scan < 400),
+    // akkor a teljes rácsra számolt "misses" tartalmazná azokat a céljeleket is,
+    // amikhez el sem jutott -> ez torzítaná a T%-ot.
+    // Ezért a T% és a hibamutatók az ÁTNÉZETT (0..itemsSeen-1) tartomány alapján számolódnak.
 
     // Átnézett elemek száma (n): az utolsó elért index + 1
     const itemsSeen = currentIndex >= 0 ? currentIndex + 1 : 0;
 
-    // Hibák száma (h): kihagyott céljelek + téves jelölések
+    // Segéd: statisztikák számítása egy adott index-tartományban [fromIdx, toIdxExclusive)
+    function statsInRange(fromIdx, toIdxExclusive) {
+      let hitsSeen = 0;        // cél + kijelölt (tartományban)
+      let targetsSeen = 0;     // céljelek száma (tartományban)
+      let falseAlarmsSeen = 0; // nem cél, de kijelölt (tartományban)
+
+      for (let i = fromIdx; i < toIdxExclusive; i++) {
+        const c = gridData[i];
+        if (!c) continue;
+
+        if (c.isTarget) targetsSeen++;
+        if (c.isTarget && c.selected) hitsSeen++;
+        if (!c.isTarget && c.selected) falseAlarmsSeen++;
+      }
+
+      const missesSeen = Math.max(0, targetsSeen - hitsSeen);
+      return { hitsSeen, missesSeen, falseAlarmsSeen, targetsSeen };
+    }
+
+    const rangeStats = statsInRange(0, itemsSeen);
+    const hits = rangeStats.hitsSeen;
+    const misses = rangeStats.missesSeen;
+    const falseAlarms = rangeStats.falseAlarmsSeen;
+    const targetsSeen = rangeStats.targetsSeen;
+
+    // Teljes céljelek száma a rácsban (ennél a beállításnál jellemzően 200)
+    const totalTargets = gridData.filter(c => c.isTarget).length;
+
+    // Nem átnézett céljelek száma (azok a céljelek, amelyek a kitöltő által nem bejárt tartományban vannak)
+    const missesUnseen = Math.max(0, totalTargets - targetsSeen);
+
+    // Hibák száma (h) az átnézett tartományban
     const h = misses + falseAlarms;
 
     // Pieron-féle pontosság (T%) az átnézett elemszámhoz viszonyítva
@@ -553,7 +576,7 @@ function segmentStats(fromIdx, toIdxExclusive) {
 }
 
 function fatiguePatternBy20Pct(nSeen) {
-  if (nSeen < 5) return "túl kevés elem a stabil mintázathoz"; 
+  if (nSeen < 5) return "túl kevés elem a stabil mintázathoz";
   const part = Math.max(1, Math.floor(nSeen * 0.2));
   const first = segmentStats(0, part);
   const last = segmentStats(nSeen - part, nSeen);
@@ -590,9 +613,9 @@ const payload = {
   used_sec: elapsed,
   rem_sec: remaining,
 
-  processed: processed,
   hits: hits,
-  misses: misses,
+  misses_seen: misses,
+  misses_unseen: missesUnseen,
   falseAlarms: falseAlarms,
 
   n_scan: itemsSeen,
@@ -613,10 +636,9 @@ const payload = {
       ${reasonText ? reasonText + "<br><br>" : ""}
       Felhasznált idő: <strong>${elapsed}</strong> mp<br>
       Hátralévő idő: <strong>${remaining}</strong> mp<br><br>
-
-      Feldolgozott elemek (cél + jelölt): <strong>${processed}</strong><br>
       Helyes találatok: <strong>${hits}</strong><br>
-      Kihagyott céljelek: <strong>${misses}</strong><br>
+      Kihagyott céljelek (eljutott): <strong>${misses}</strong><br>
+      Nem átnézett céljelek: <strong>${missesUnseen}</strong><br>
       Téves jelölések: <strong>${falseAlarms}</strong><br><br>
 
       Sebesség: <strong>${speedEpm.toFixed(2)}</strong> elem/perc<br>
