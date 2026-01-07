@@ -37,12 +37,12 @@
       margin-top: 2px;
     }
     #toggleInstructions{
-      padding: 6px 10px;
+      padding: 5px 8px;
       border: 1px solid #bbb;
       border-radius: 10px;
       background: #f5f5f5;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.75rem;
     }
     body.instructions-collapsed .task-description{
       display:none;
@@ -172,27 +172,46 @@
   #timeBarContainer{ width: 160px; }
 }
 
-    /* Eredmény overlay (sötétített háttér) */
-    #overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;               /* csak a végén látszik */
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1.3rem;
-    }
+/* A rács és az eredmény overlay közös konténere (desktopon a táblán belül tartja az eredményt) */
+#grid-wrap{
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+}/* Eredmény overlay:
+   - Desktopon: a táblán BELÜL (grid-wrap-on belül) jelenik meg, így nem lóghat ki.
+   - Mobilon: marad teljes képernyős (a jelenlegi jó működés miatt). */
+#overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.15rem;
+}
 
-    #overlay-inner {
-      background: #222;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 400px;
-      text-align: left;
-    }
+/* Mobil: marad full-screen overlay */
+@media (pointer: coarse){
+  #overlay{
+    position: fixed;
+    inset: 0;
+    font-size: 1.3rem;
+  }
+}
 
-    /* Időcsík tartó */
+#overlay-inner {
+  background: #222;
+  padding: 18px;
+  border-radius: 10px;
+  width: min(520px, 94%);
+  max-height: 94%;
+  overflow: auto; /* kis kijelzőn belül görgethető, de a táblából nem lóg ki */
+  text-align: left;
+  box-sizing: border-box;
+}
+
+/* Időcsík tartó */
     #timeBarContainer {
       width: 200px;
       height: 12px;
@@ -247,12 +266,12 @@
   </div>
 
   <p class="task-description">
-    Feladat leírása: a <strong>"Teszt indítása"</strong> után felugró ablakban add meg a mintának megfelelően a neved. Az "OK" gombra kattintás után megjelenő táblázatban
+    Feladatleírás: a <strong>"Teszt indítása"</strong> után felugró ablakban add meg a mintának megfelelően a neved. Az "OK" gombra kattintás után megjelenő táblázatban
     <strong>keresd meg azokat az alakzatokat, amelyek megegyeznek a mintában szereplőkkel</strong>,
-    és az ENTER/SPACE billentyű lenyomásával jelöld ki őket.
+    billentyűzettel történő kitöltés esetén az ENTER/SPACE billentyű lenyomásával, érintőkijelző esetén a "Jelöl(✓)" gomb lenyomásával jelöld ki őket.
     <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
-    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>.
-    A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz. Időkeret: <strong>5 perc</strong>.
+    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>.
+    A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz.<br>Időkeret: <strong>5 perc</strong>.
   </p>
 
   <div id="top-bar">
@@ -269,12 +288,21 @@
       <strong>Minták:</strong>
       <span id="targetsDisplay"></span>
     </div>
+  </div>  <!-- A szimbólumrács (tábla) + eredmény overlay (desktopon a táblán belül marad) -->
+  <div id="grid-wrap">
+    <div id="grid"></div>
+
+<!-- Eredményeket mutató felugró doboz -->
+<div id="overlay">
+  <div id="overlay-inner">
+    <h2>Eredmény</h2>
+    <p id="resultText"></p>
+    <div id="sendStatus" style="margin-top:10px; font-size:0.95rem; color:#ddd;"></div>
+  </div>
+</div>
   </div>
 
-  <!-- A szimbólumrács (tábla) -->
-  <div id="grid"></div>
-
-  <!-- Alsó sáv – mobilvezérlők touch kijelzőkhöz -->
+<!-- Alsó sáv – mobilvezérlők touch kijelzőkhöz -->
   <div id="bottom-bar">
     <div id="mobile-controls" aria-label="Mobil vezérlők">
       <button id="btnSelect" type="button" disabled>Jelöl (✓)</button>
@@ -282,14 +310,6 @@
     </div>
   </div>
 
-  <!-- Eredményeket mutató felugró doboz -->
-  <div id="overlay">
-    <div id="overlay-inner">
-      <h2>Eredmény</h2>
-      <p id="resultText"></p>
-      
-      <div id="sendStatus" style="margin-top:10px; font-size:0.95rem; color:#ddd;"></div>
-</div>
   </div>
 
 <script>
@@ -723,24 +743,38 @@ function startTest() {
     }
 
     // ----------------- KIÉRTÉKELÉS -----------------
-    let hits = 0;        // helyes jelölés (cél + kijelölt)
-    let misses = 0;      // kihagyott cél
-    let falseAlarms = 0; // rossz jelölés (nem cél, de kijelölt)
+    // Fontos: a T% és a fő mutatók az *átnézett* (seen) elemszámhoz igazodnak.
+    // A céljelek kihagyását ezért kettéválasztjuk:
+    // - misses_seen: kihagyott céljelek az átnézett tartományban
+    // - misses_unseen: céljelek a még nem átnézett (unseen) tartományban
+    let hits = 0;             // helyes jelölés az átnézett tartományban
+    let misses_seen = 0;      // kihagyott cél az átnézett tartományban
+    let misses_unseen = 0;    // kihagyott cél a nem átnézett tartományban (csak információ)
+    let falseAlarms = 0;      // rossz jelölés (nem cél, de kijelölt) – gyakorlatilag csak seen-ben fordulhat elő
 
-    gridData.forEach(c => {
-      if (c.isTarget && c.selected) hits++;
-      if (c.isTarget && !c.selected) misses++;
-      if (!c.isTarget && c.selected) falseAlarms++;
-    });
-
-    // Feldolgozott elemnek számít minden céljel + minden jelölt
-    const processed = gridData.filter(c => c.selected || c.isTarget).length;
 
     // Átnézett elemek száma (n): az utolsó elért index + 1
     const itemsSeen = currentIndex >= 0 ? currentIndex + 1 : 0;
 
+    // Seen (0..itemsSeen-1)
+    for (let i = 0; i < itemsSeen; i++) {
+      const c = gridData[i];
+      if (!c) continue;
+      if (c.isTarget && c.selected) hits++;
+      if (c.isTarget && !c.selected) misses_seen++;
+      if (!c.isTarget && c.selected) falseAlarms++;
+    }
+
+    // Unseen (itemsSeen..end) – ide már nem jutott el a kitöltő
+    for (let i = itemsSeen; i < gridData.length; i++) {
+      const c = gridData[i];
+      if (!c) continue;
+      if (c.isTarget) misses_unseen++;
+    }
+
+
     // Hibák száma (h): kihagyott céljelek + téves jelölések
-    const h = misses + falseAlarms;
+    const h = misses_seen + falseAlarms;
 
     // Pieron-féle pontosság (T%) az átnézett elemszámhoz viszonyítva
     const tPercent = itemsSeen > 0 ? ((itemsSeen - h) * 100) / itemsSeen : 0;
@@ -757,7 +791,7 @@ const speedEpm = elapsed > 0 ? (itemsSeen / (elapsed / 60)) : 0;
 const errorRate = itemsSeen > 0 ? (h / itemsSeen) : 0;
 
 // Kihagyási arány (kihagyott cél / összes cél)
-const missRate = (hits + misses) > 0 ? (misses / (hits + misses)) : 0;
+const missRate = (hits + misses_seen) > 0 ? (misses_seen / (hits + misses_seen)) : 0;
 
 // Téves jelölési arány (téves jelölés / átnézett elemszám)
 const faRate = itemsSeen > 0 ? (falseAlarms / itemsSeen) : 0;
@@ -818,10 +852,8 @@ const payload = {
   anon_id: anonId || "",
   used_sec: elapsed,
   rem_sec: remaining,
-
-  processed: processed,
   hits: hits,
-  misses: misses,
+  misses_seen: misses_seen,
   falseAlarms: falseAlarms,
 
   n_scan: itemsSeen,
@@ -842,10 +874,8 @@ const payload = {
       ${reasonText ? reasonText + "<br><br>" : ""}
       Felhasznált idő: <strong>${elapsed}</strong> mp<br>
       Hátralévő idő: <strong>${remaining}</strong> mp<br><br>
-
-      Feldolgozott elemek (cél + jelölt): <strong>${processed}</strong><br>
       Helyes találatok: <strong>${hits}</strong><br>
-      Kihagyott céljelek: <strong>${misses}</strong><br>
+      Kihagyott céljelek: <strong>${misses_seen}</strong><br>
       Téves jelölések: <strong>${falseAlarms}</strong><br><br>
 
       Sebesség: <strong>${speedEpm.toFixed(2)}</strong> elem/perc<br>
