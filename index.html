@@ -37,12 +37,12 @@
       margin-top: 2px;
     }
     #toggleInstructions{
-      padding: 5px 8px;
+      padding: 6px 10px;
       border: 1px solid #bbb;
       border-radius: 10px;
       background: #f5f5f5;
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: 0.95rem;
     }
     body.instructions-collapsed .task-description{
       display:none;
@@ -181,7 +181,7 @@
    - Desktopon: a táblán BELÜL (grid-wrap-on belül) jelenik meg, így nem lóghat ki.
    - Mobilon: marad teljes képernyős (a jelenlegi jó működés miatt). */
 #overlay {
-  position: absolute;
+position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.5);
   display: none;
@@ -189,7 +189,8 @@
   justify-content: center;
   color: white;
   font-size: 1.15rem;
-}
+      z-index: 9999;
+    }
 
 /* Mobil: marad full-screen overlay */
 @media (pointer: coarse){
@@ -201,7 +202,7 @@
 }
 
 #overlay-inner {
-  background: #222;
+background: #222;
   padding: 18px;
   border-radius: 10px;
   width: min(520px, 94%);
@@ -209,7 +210,9 @@
   overflow: auto; /* kis kijelzőn belül görgethető, de a táblából nem lóg ki */
   text-align: left;
   box-sizing: border-box;
-}
+      opacity: 1;
+
+    }
 
 /* Időcsík tartó */
     #timeBarContainer {
@@ -256,6 +259,15 @@
   border: 2px solid #fff; /* kiemelés */
 }
 
+
+    /* Mobilon kicsit kompaktabb eredmény ablak */
+    @media (pointer: coarse){
+      #overlay-inner{
+        width: min(560px, 94%);
+        max-height: 92vh;
+        font-size: 1.05rem;
+      }
+    }
 </style>
 </head>
 <body>
@@ -266,12 +278,12 @@
   </div>
 
   <p class="task-description">
-    Feladatleírás: a <strong>"Teszt indítása"</strong> után felugró ablakban add meg a mintának megfelelően a neved. Az "OK" gombra kattintás után megjelenő táblázatban
+    Feladat leírása: a <strong>"Teszt indítása"</strong> után felugró ablakban add meg a mintának megfelelően a neved. Az "OK" gombra kattintás után megjelenő táblázatban
     <strong>keresd meg azokat az alakzatokat, amelyek megegyeznek a mintában szereplőkkel</strong>,
-    billentyűzettel történő kitöltés esetén az ENTER/SPACE billentyű lenyomásával, érintőkijelző esetén a "Jelöl(✓)" gomb lenyomásával jelöld ki őket.
+    és az ENTER/SPACE billentyű lenyomásával jelöld ki őket.
     <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
-    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>.
-    A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz.<br>Időkeret: <strong>5 perc</strong>.
+    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>.
+    A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz. Időkeret: <strong>5 perc</strong>.
   </p>
 
   <div id="top-bar">
@@ -327,9 +339,6 @@
   // A lehetséges szimbólumok (köztük a céljelek)
   const SYMBOL_POOL = ["■", "▲", "●", "◆", "□", "△", "○", "◇"];
   const NON_TARGET_SYMBOLS = SYMBOL_POOL.filter(s => !TARGET_SYMBOLS.includes(s));
-
-  // Fix arány: ahány céljel van a SYMBOL_POOL-ban, olyan arányban legyen a táblázatban is
-  const TARGET_RATIO = TARGET_SYMBOLS.length / SYMBOL_POOL.length;
 
   // ----------------- ÁLLAPOTVÁLTOZÓK -----------------
   let gridData = [];       // a rács cellái: {symbol, isTarget, selected}
@@ -514,35 +523,43 @@ gridDiv.addEventListener("pointercancel", (e) => {
     gridData = [];
     gridDiv.innerHTML = "";
 
-    const totalCells = ROWS * COLS;
-    const targetCount = Math.round(totalCells * TARGET_RATIO);
+    // ✅ Soronként fix arány: 10 céljel + 10 nem-céljel (COLS=20 esetén)
+    // Ha később a COLS értéke változna, a céljelek száma automatikusan a sor felére igazodik.
+    const targetsPerRow = (COLS === 20) ? 10 : Math.floor(COLS / 2);
+    const nonTargetsPerRow = COLS - targetsPerRow;
 
-    // Véletlen pozíciók kiválasztása a céljelekhez
-    const indices = Array.from({ length: totalCells }, (_, i) => i);
-    shuffle(indices);
-    const targetPositions = new Set(indices.slice(0, targetCount));
+    for (let r = 0; r < ROWS; r++) {
+      // Ebben a sorban előállítjuk a 10 db "true" (cél) + 10 db "false" (nem cél) mintát, majd megkeverjük
+      const rowPattern = [
+        ...Array.from({ length: targetsPerRow }, () => true),
+        ...Array.from({ length: nonTargetsPerRow }, () => false)
+      ];
+      shuffle(rowPattern);
 
-    for (let i = 0; i < totalCells; i++) {
-      const isTarget = targetPositions.has(i);
-      const pool = isTarget ? TARGET_SYMBOLS : NON_TARGET_SYMBOLS;
-      const symbol = pool[Math.floor(Math.random() * pool.length)];
+      for (let c = 0; c < COLS; c++) {
+        const i = r * COLS + c;
 
-      // Belső adatstruktúra feltöltése
-      gridData.push({ symbol, isTarget, selected: false });
+        const isTarget = rowPattern[c];
+        const pool = isTarget ? TARGET_SYMBOLS : NON_TARGET_SYMBOLS;
+        const symbol = pool[Math.floor(Math.random() * pool.length)];
 
-      // DOM elem létrehozása
-      const cell = document.createElement("div");
-      cell.className = "cell symbol";
-      cell.textContent = symbol;
-      cell.dataset.index = i;
+        // Belső adatstruktúra feltöltése
+        gridData.push({ symbol, isTarget, selected: false });
 
-      // Egérkattintás teljes tiltása (csak billentyűvel lehessen jelölni)
-      cell.addEventListener("click", (e) => {
-        e.preventDefault();
-        return false;
-      });
+        // DOM elem létrehozása
+        const cell = document.createElement("div");
+        cell.className = "cell symbol";
+        cell.textContent = symbol;
+        cell.dataset.index = i;
 
-      gridDiv.appendChild(cell);
+        // Egérkattintás teljes tiltása (csak billentyűvel lehessen jelölni)
+        cell.addEventListener("click", (e) => {
+          e.preventDefault();
+          return false;
+        });
+
+        gridDiv.appendChild(cell);
+      }
     }
 
     // Kurzor alaphelyzetben „nincs sehol”
@@ -876,7 +893,8 @@ const payload = {
       Felhasznált idő: <strong>${elapsed}</strong> mp<br>
       Hátralévő idő: <strong>${remaining}</strong> mp<br><br>
       Helyes találatok: <strong>${hits}</strong><br>
-      Kihagyott céljelek: <strong>${misses_seen}</strong><br>
+      Kihagyott céljelek (seen): <strong>${misses_seen}</strong><br>
+      Kihagyott céljelek (unseen): <strong>${misses_unseen}</strong><br>
       Téves jelölések: <strong>${falseAlarms}</strong><br><br>
 
       Sebesség: <strong>${speedEpm.toFixed(2)}</strong> elem/perc<br>
