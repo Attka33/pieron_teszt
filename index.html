@@ -469,44 +469,24 @@ if (window.visualViewport){
 if (btnSelect) btnSelect.addEventListener("click", () => toggleCurrentCell());
 if (btnNext) btnNext.addEventListener("click", () => moveToNextCell());
 
-// ----------------- TOUCH VEZÉRLÉS (tap = jelöl, swipe jobbra = tovább) -----------------
-let touchStart = null;
-
+// ----------------- TOUCH VEZÉRLÉS -----------------
+// Fontos: érintőkijelzőn a rácsra koppintás / húzás NEM jelölhet és NEM léptethet.
+// Mobilon a vezérlés kizárólag az alsó gombokkal történik: "Jelöl (✓)" és "Tovább (→)".
 gridDiv.addEventListener("pointerdown", (e) => {
   if (!started) return;
-  // Egérrel továbbra is billentyűzetes vezérlés legyen
-  if (e.pointerType === "mouse") return;
-
-  touchStart = { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
-  try { gridDiv.setPointerCapture(e.pointerId); } catch (_) {}
+  if (e.pointerType === "mouse") return; // egérnél amúgy is tiltjuk a rácsot
+  // Ne történjen semmi a rácson, és ne is "kattintson" a böngésző
+  e.preventDefault();
 });
 
 gridDiv.addEventListener("pointerup", (e) => {
   if (!started) return;
   if (e.pointerType === "mouse") return;
-  if (!touchStart || touchStart.id !== e.pointerId) return;
-
-  const dx = e.clientX - touchStart.x;
-  const dy = e.clientY - touchStart.y;
-
-  const adx = Math.abs(dx);
-  const ady = Math.abs(dy);
-
-  // Tap: minimális elmozdulás
-  if (adx < 10 && ady < 10) {
-    toggleCurrentCell();
-  } else {
-    // Swipe jobbra: jelentős dx, kicsi dy
-    if (dx > 40 && ady < 30) {
-      moveToNextCell();
-    }
-  }
-
-  touchStart = null;
+  e.preventDefault();
 });
 
 gridDiv.addEventListener("pointercancel", (e) => {
-  if (touchStart && touchStart.id === e.pointerId) touchStart = null;
+  // nincs teendő
 });
 
   // ----------------- SEGÉDFÜGGVÉNYÉNY: egyszerű keverő -----------------
