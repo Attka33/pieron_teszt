@@ -278,7 +278,7 @@ background: #222;
   </div>
 
   <p class="task-description">
-    Feladatleírás: a <strong>"Teszt indítása"</strong> után felugró ablakban add meg a mintának megfelelően a neved. Az "OK" gombra kattintás után megjelenő táblázatban
+    Feladatleírás: a <strong>"Teszt indítása"</strong> után felugró ablakban adj meg egy mintának megfelelő azonosítót. Az "OK" gombra kattintás után megjelenő táblázatban
     <strong>keresd meg azokat az alakzatokat, amelyek megegyeznek a mintában szereplőkkel</strong>,
     billentyűzettel történő kitöltés esetén az ENTER/SPACE billentyű lenyomásával, érintőkijelző esetén a "Jelöl(✓)" gomb lenyomásával jelöld ki őket.
     <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
@@ -671,7 +671,7 @@ function startTest() {
     // Anonim azonosító bekérése (erősen ajánlott az eredmények későbbi beazonosításához)
     // Ha nem szeretnél kérni, hagyd üresen és a Sheetben marad üres.
     if (!anonId) {
-      const entered = window.prompt("Add meg a vezetékneved + a keresztneved kezdőbetűjét (pl.: Nagy F):", "");
+      const entered = window.prompt("Anonim azonosító - Teljes név két kezdőbetűje és születési hónap pl.: Nagy Ferenc 04 -> NF04", "");
       if (entered && entered.trim()) {
         anonId = entered.trim();
       }
