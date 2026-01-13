@@ -671,7 +671,7 @@ function startTest() {
     // Anonim azonosító bekérése (erősen ajánlott az eredmények későbbi beazonosításához)
     // Ha nem szeretnél kérni, hagyd üresen és a Sheetben marad üres.
     if (!anonId) {
-      const entered = window.prompt("Azonosító - Saját születési hónap + Anyja keresztnevének első 2 betűje pl.: 04LI", "");
+      const entered = window.prompt("Saját születési hónap + Anyja keresztnevének első 2 betűje + kedvenc szám pl.: 04LI3", "");
       if (entered && entered.trim()) {
         anonId = entered.trim();
       }
