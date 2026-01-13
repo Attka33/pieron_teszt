@@ -268,6 +268,55 @@ background: #222;
         font-size: 1.05rem;
       }
     }
+
+/* ---- Próbasor (minta sor) a főképernyőn ---- */
+#practice-container{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  margin-top: 12px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.practice-label{
+  font-size: 14px;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+#practice-row{
+  display: grid;
+  grid-template-columns: repeat(20, var(--cell-size));
+  gap: var(--grid-gap);
+  justify-content: center;
+}
+#practice-row .cell{
+  opacity: 0.9;
+}
+
+/* Próbasor mobil vezérlők (mindig aktívak touch-on) */
+#practice-controls{
+  display: none;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+#practice-controls button{
+  padding: 10px 14px;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #999;
+  background: #f5f5f5;
+  cursor: pointer;
+  min-width: 140px;
+}
+@media (pointer: coarse){
+  #practice-controls{ display: flex; }
+}
+
 </style>
 </head>
 <body>
@@ -282,7 +331,8 @@ background: #222;
     <strong>keresd meg azokat az alakzatokat, amelyek megegyeznek a mintában szereplőkkel</strong>,
     billentyűzettel történő kitöltés esetén az ENTER/SPACE billentyű lenyomásával, érintőkijelző esetén a "Jelöl(✓)" gomb lenyomásával jelöld ki őket.
     <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
-    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>.
+    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>. Érdemes a teszt indítása előtt a
+    a próba soron végigmenni, az írányításhoz való hozzászokáshoz.
     A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz.<br>Időkeret: <strong>5 perc</strong>.
   </p>
 
@@ -300,7 +350,14 @@ background: #222;
       <strong>Minták:</strong>
       <span id="targetsDisplay"></span>
     </div>
-  </div>  <!-- A szimbólumrács (tábla) + eredmény overlay (desktopon a táblán belül marad) -->
+  
+  <!-- Próbasor (nem kerül kiértékelésre, nem számol időt) -->
+  <div id="practice-container" aria-label="Próbasor">
+    <div class="practice-label"><strong>Próba sor:</strong></div>
+    <div id="practice-row"></div>
+</div>
+
+</div>  <!-- A szimbólumrács (tábla) + eredmény overlay (desktopon a táblán belül marad) -->
   <div id="grid-wrap">
     <div id="grid"></div>
 
@@ -340,7 +397,81 @@ background: #222;
   const SYMBOL_POOL = ["■", "▲", "●", "◆", "□", "△", "○", "◇"];
   const NON_TARGET_SYMBOLS = SYMBOL_POOL.filter(s => !TARGET_SYMBOLS.includes(s));
 
-  // ----------------- ÁLLAPOTVÁLTOZÓK -----------------
+  
+  // ----------------- PRÓBASOR (MINTASOR) -----------------
+  // Statikus 20 elemű sor: kipróbálható rajta a billentyűzet (→, SPACE/ENTER) és érintőkijelző (gombok) vezérlés.
+  const PRACTICE_SYMBOLS = ["△","◆","●","◇","□","●","▲","■","◇","◆","●", "▲","■","◇", "□","◇", "△","□","▲","○"];
+  let practiceIndex = -1;
+  let practiceSelected = Array(PRACTICE_SYMBOLS.length).fill(false);
+
+  const practiceRowDiv = document.getElementById("practice-row");
+  const pBtnSelect = document.getElementById("pBtnSelect");
+  const pBtnNext = document.getElementById("pBtnNext");
+
+  function renderPracticeRow(){
+    if (!practiceRowDiv) return;
+    practiceRowDiv.innerHTML = "";
+    PRACTICE_SYMBOLS.forEach((sym, idx) => {
+      const cell = document.createElement("div");
+      cell.className = "cell symbol";
+      cell.textContent = sym;
+      cell.dataset.pindex = String(idx);
+
+      if (practiceSelected[idx]) cell.classList.add("selected");
+      if (idx === practiceIndex) cell.classList.add("cursor");
+
+      // Koppintás/kattintás tiltása (próbasorban is csak gomb/billentyű vezérlés)
+      cell.addEventListener("click", (e) => { e.preventDefault(); return false; });
+practiceRowDiv.appendChild(cell);
+    });
+  }
+
+  function updatePracticeCursor(){
+    if (!practiceRowDiv) return;
+    const cells = practiceRowDiv.querySelectorAll(".cell");
+    cells.forEach(c => c.classList.remove("cursor"));
+    if (practiceIndex >= 0 && practiceIndex < cells.length) {
+      cells[practiceIndex].classList.add("cursor");
+    }
+  }
+
+  function practiceMoveNext(){
+    const max = PRACTICE_SYMBOLS.length;
+    if (practiceIndex === -1) practiceIndex = 0;
+    else if (practiceIndex < max - 1) practiceIndex++;
+    else return; // a próbasornál nincs automatikus "befejezés"
+    updatePracticeCursor();
+  }
+
+  function practiceToggleCurrent(){
+    if (practiceIndex < 0) return;
+    if (practiceSelected[practiceIndex]) return; // ne lehessen visszavonni
+    practiceSelected[practiceIndex] = true;
+
+    const el = practiceRowDiv.querySelector(`.cell[data-pindex="${practiceIndex}"]`);
+    if (el) el.classList.add("selected");
+
+    // jelölés után automatikus továbbléptetés (mint a tesztben)
+    practiceMoveNext();
+  }
+
+  function initPractice(){
+    if (!practiceRowDiv) return;
+    practiceSelected = Array(PRACTICE_SYMBOLS.length).fill(false);
+    practiceIndex = 0;
+    renderPracticeRow();
+
+    // Touch-on a próba a gombokkal történik (ugyanaz a logika, mint a tesztben).
+    if (pBtnSelect) pBtnSelect.addEventListener("click", () => practiceToggleCurrent());
+    if (pBtnNext) pBtnNext.addEventListener("click", () => practiceMoveNext());
+
+    // Érintőkijelzőn ne legyen "véletlen kijelölés" / görgetésindítás a próbasoron
+    practiceRowDiv.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse") e.preventDefault();
+    });
+  }
+
+// ----------------- ÁLLAPOTVÁLTOZÓK -----------------
   let gridData = [];       // a rács cellái: {symbol, isTarget, selected}
   let started = false;     // fut-e már a teszt
   let timeLeft = DURATION_SECONDS;
@@ -378,7 +509,7 @@ if (toggleInstructionsBtn){
 }
 
 function updateMobileControlsState(){
-  const enabled = !!started;
+  const enabled = true; // próbasorhoz is aktív
   if (btnSelect) btnSelect.disabled = !enabled;
   if (btnNext) btnNext.disabled = !enabled;
 }
@@ -466,8 +597,8 @@ if (window.visualViewport){
 }
 
 // ----------------- MOBIL GOMBOK -----------------
-if (btnSelect) btnSelect.addEventListener("click", () => toggleCurrentCell());
-if (btnNext) btnNext.addEventListener("click", () => moveToNextCell());
+if (btnSelect) btnSelect.addEventListener("click", () => { if (!started) { practiceToggleCurrent(); } else { toggleCurrentCell(); } });
+if (btnNext) btnNext.addEventListener("click", () => { if (!started) { practiceMoveNext(); } else { moveToNextCell(); } });
 
 // ----------------- TOUCH VEZÉRLÉS -----------------
 // Fontos: érintőkijelzőn a rácsra koppintás / húzás NEM jelölhet és NEM léptethet.
@@ -666,6 +797,10 @@ gridDiv.addEventListener("pointercancel", (e) => {
 
 
 function startTest() {
+  // hide practice row when real test starts
+  const pc = document.getElementById('practice-container');
+  if (pc) pc.style.display = 'none';
+
     if (started) return;
 
     // Anonim azonosító bekérése (erősen ajánlott az eredmények későbbi beazonosításához)
@@ -922,9 +1057,21 @@ const payload = {
 
   // ----------------- BILLENTYŰZETKEZELÉS -----------------
   // SPACE / ENTER: jelölés (végleges), jobbra nyíl: léptetés
+  
   document.addEventListener("keydown", (e) => {
-    if (!started) return;
+    // Ha a teszt NEM fut, akkor a próbasort vezéreljük (→, SPACE/ENTER)
+    if (!started) {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        practiceMoveNext();
+      } else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        practiceToggleCurrent();
+      }
+      return;
+    }
 
+    // Teszt közben a rácsot vezéreljük
     if (e.key === "ArrowRight") {
       e.preventDefault();
       moveToNextCell();
@@ -934,10 +1081,11 @@ const payload = {
     }
   });
 
-  // ----------------- INDULÁSKOR: TÁBLA ELŐKÉSZÍTÉSE -----------------
+// ----------------- INDULÁSKOR: TÁBLA ELŐKÉSZÍTÉSE -----------------
   updateResponsiveSizing();
   generateGrid();
-  startBtn.addEventListener("click", startTest);
+    initPractice();
+startBtn.addEventListener("click", startTest);
   updateMobileControlsState();
 </script>
 
