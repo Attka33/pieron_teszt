@@ -323,7 +323,6 @@ background: #222;
 
   <div class="instructions-header">
     <h2 style="text-align: center; margin: 0;">Pieron-jellegű figyelemteszt</h2>
-    <button id="toggleInstructions" type="button" aria-expanded="true">Instrukciók elrejtése</button>
   </div>
 
   <p class="task-description">
@@ -331,8 +330,8 @@ background: #222;
     <strong>keresd meg azokat az alakzatokat, amelyek megegyeznek a mintában szereplőkkel</strong>,
     billentyűzettel történő kitöltés esetén az ENTER/SPACE billentyű lenyomásával, érintőkijelző esetén a "Jelöl(✓)" gomb lenyomásával jelöld ki őket.
     <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
-    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>. Érdemes a teszt indítása előtt a 
-    próba soron végigmenni, az írányításhoz való hozzászokáshoz.
+    ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>. Érdemes a teszt indítása előtt a
+    a próba soron végigmenni, az írányításhoz való hozzászokáshoz.
     A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz.<br>Időkeret: <strong>5 perc</strong>.
   </p>
 
@@ -490,23 +489,6 @@ practiceRowDiv.appendChild(cell);
 
 const btnSelect = document.getElementById("btnSelect");
 const btnNext = document.getElementById("btnNext");
-
-// Instrukciók összecsukása/kibontása
-const toggleInstructionsBtn = document.getElementById("toggleInstructions");
-function setInstructionsCollapsed(collapsed){
-  document.body.classList.toggle("instructions-collapsed", !!collapsed);
-  if (!toggleInstructionsBtn) return;
-  toggleInstructionsBtn.setAttribute("aria-expanded", String(!collapsed));
-  toggleInstructionsBtn.textContent = collapsed ? "Instrukciók megjelenítése" : "Instrukciók elrejtése";
-  // A méretezést is frissítjük, mert változott a felhasználható magasság
-  updateResponsiveSizing();
-}
-if (toggleInstructionsBtn){
-  toggleInstructionsBtn.addEventListener("click", () => {
-    const collapsed = document.body.classList.contains("instructions-collapsed");
-    setInstructionsCollapsed(!collapsed);
-  });
-}
 
 function updateMobileControlsState(){
   const enabled = true; // próbasorhoz is aktív
@@ -797,25 +779,44 @@ gridDiv.addEventListener("pointercancel", (e) => {
 
 
 function startTest() {
-  // hide practice row when real test starts
-  const pc = document.getElementById('practice-container');
-  if (pc) pc.style.display = 'none';
-
     if (started) return;
 
-    // Anonim azonosító bekérése (erősen ajánlott az eredmények későbbi beazonosításához)
-    // Ha nem szeretnél kérni, hagyd üresen és a Sheetben marad üres.
+    // Anonim azonosító bekérése (kötelező)
+    // Ha a résztvevő Mégse-t nyom, térjünk vissza a főképernyőre.
+    // Üres azonosítóval ne engedjük a továbblépést.
     if (!anonId) {
-      const entered = window.prompt("Saját születési hónap + Anyja keresztnevének első 2 betűje + kedvenc szám pl.: 04LI3", "");
-      if (entered && entered.trim()) {
-        anonId = entered.trim();
+      const entered = window.prompt(
+        "Saját születési hónap + Anyja keresztnevének első 2 betűje + kedvenc szám pl.: 04LI3",""
+      );
+
+      // Mégse
+      if (entered === null) {
+        // Maradjon a főképernyő, ne induljon a teszt
+        document.body.classList.remove('instructions-collapsed');
+        const pc = document.getElementById('practice-container');
+        if (pc) pc.style.display = '';
+        return;
       }
+
+      // Üres
+      if (!entered.trim()) {
+        alert("Kérlek adj meg egy azonosítót!");
+        document.body.classList.remove('instructions-collapsed');
+        const pc = document.getElementById('practice-container');
+        if (pc) pc.style.display = '';
+        return;
+      }
+
+      anonId = entered.trim();
     }
+
+    // A teszt tényleges indításakor rejtsük el a próbasort és az instrukciókat
+    const pc = document.getElementById('practice-container');
+    if (pc) pc.style.display = 'none';
+    document.body.classList.add('instructions-collapsed');
 
     started = true;
     document.body.classList.add("started");
-    // Indítás után alapból csukjuk össze az instrukciókat, hogy biztosan elférjen a rács.
-    setInstructionsCollapsed(true);
     updateMobileControlsState();
     updateResponsiveSizing();
 
