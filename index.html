@@ -331,7 +331,7 @@ background: #222;
     billentyűzettel történő kitöltés esetén az ENTER/SPACE billentyű lenyomásával, érintőkijelző esetén a "Jelöl(✓)" gomb lenyomásával jelöld ki őket.
     <strong>FONTOS</strong>, ha kijelöltél egy alakzatot, akkor utána automatikus továbbléptetés történik,
     ellenkező esetben a &rightarrow; (jobbra nyíl) billentyűvel/gombbal lehet továbblépni, visszaléptetési lehetőség <strong>nincs</strong>. Érdemes a teszt indítása előtt a
-    próba soron végigmenni, az írányításhoz való hozzászokáshoz.
+    próba táblázaton végigmenni, az írányításhoz való hozzászokáshoz.
     A teszt akkor fejeződik be idő előtt, ha az utolsó alakzaton is továbblépsz.<br>Időkeret: <strong>5 perc</strong>.
   </p>
 
@@ -352,7 +352,7 @@ background: #222;
   
   <!-- Próbasor (nem kerül kiértékelésre, nem számol időt) -->
   <div id="practice-container" aria-label="Próbasor">
-    <div class="practice-label"><strong>Próba sor:</strong></div>
+    <div class="practice-label"><strong>Próba táblázat:</strong></div>
     <div id="practice-row"></div>
 </div>
 
@@ -399,7 +399,11 @@ background: #222;
   
   // ----------------- PRÓBASOR (MINTASOR) -----------------
   // Statikus 20 elemű sor: kipróbálható rajta a billentyűzet (→, SPACE/ENTER) és érintőkijelző (gombok) vezérlés.
-  const PRACTICE_SYMBOLS = ["△","◆","●","◇","□","●","▲","■","◇","◆","●", "▲","■","◇", "□","◇", "△","□","▲","○"];
+  const PRACTICE_SYMBOLS = ["△","◆","●","◇","□","●","▲","■","◇","◆","●","▲","■","◇","□","◇","△","□","▲","○",
+                            "●","△","□","◆","◇","□","●","▲","■","◇","◇","◆","▲","■","○","□","●","▲","◇","△",
+                            "◆","◇","□","△","●","■","◇","▲","◆","□","●","◇","▲","■","△","○","●","◇","□","▲",
+                            "◆","■","●","△","○","●","◇","□","▲","●","◇","■","▲","◆","◇","□","△","◇","□","▲",
+                            "▲","◇","□","●","◆","■","△","◇","●","▲","□","◆","◇","■","○","●","△","□","▲","◇"];
   let practiceIndex = -1;
   let practiceSelected = Array(PRACTICE_SYMBOLS.length).fill(false);
 
