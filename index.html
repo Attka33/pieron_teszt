@@ -2,8 +2,8 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Pieron-jellegű figyelemteszt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pieron-jellegű figyelemteszt</title>
   <style>
     :root {
       /* Itt lehet egy helyen állítani a szimbólumok méretét (minták + táblázat) */
@@ -16,8 +16,24 @@
       height: 100%;
       overflow: hidden;
     }
+/* ---- iOS Safari: duplaérintés (double-tap) zoom / "ugrálás" elleni védelem ---- */
+/* 1) Tap highlight kikapcsolása (esztétika + véletlen villanások csökkentése) */
+* { -webkit-tap-highlight-color: transparent; }
 
-    body {
+/* 2) Véletlen kijelölés tiltása és gomb-tap stabilizálás */
+button, #grid, #mobile-controls, #practice-row, .cell{
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 3) Touch gesture-k (zoom/scroll) visszafogása az interaktív területeken */
+/* "manipulation": engedélyezett a normál tap, de tiltja a double-tap zoomot sok esetben. */
+button, #grid, #mobile-controls, #practice-row { touch-action: manipulation; }
+
+/* Ha iOS-en még mindig belenagyítana: a rács/próbasor legyen még szigorúbb */
+#grid, #practice-row { touch-action: none; }
+
+body {
       font-family: sans-serif;
       max-width: 980px;
       margin: 0 auto;
@@ -470,7 +486,10 @@ practiceRowDiv.appendChild(cell);
 
     // Érintőkijelzőn ne legyen "véletlen kijelölés" / görgetésindítás a próbasoron
     practiceRowDiv.addEventListener("pointerdown", (e) => {
-      if (e.pointerType !== "mouse") e.preventDefault();
+      if (e.pointerType !== "mouse") { e.preventDefault(); e.stopPropagation(); }
+    });
+    practiceRowDiv.addEventListener("pointerup", (e) => {
+      if (e.pointerType !== "mouse") { e.preventDefault(); e.stopPropagation(); }
     });
   }
 
@@ -571,15 +590,24 @@ function updateResponsiveSizing(){
 }
 
 // Resize/orientation változáskor újraszámoljuk (mobilon ez kritikus)
-window.addEventListener("resize", () => {
-  updateResponsiveSizing();
-});
+// iOS Safarin a viewport sokszor "rángatja" a resize-t (cím-/eszköztár fel-le), ezért debouncoljuk.
+let __resizeTimer = null;
+function safeResize(){
+  if (__resizeTimer) clearTimeout(__resizeTimer);
+  __resizeTimer = setTimeout(() => {
+    updateResponsiveSizing();
+    // a próbasor is a cellaméretet használja, ezért újrarendereljük
+    if (!started) renderPracticeRow();
+  }, 120);
+}
+
+window.addEventListener("resize", safeResize);
 window.addEventListener("orientationchange", () => {
   // orientationchange után kicsit később stabil a viewport
-  setTimeout(updateResponsiveSizing, 250);
+  setTimeout(safeResize, 250);
 });
 if (window.visualViewport){
-  window.visualViewport.addEventListener("resize", updateResponsiveSizing);
+  window.visualViewport.addEventListener("resize", safeResize);
 }
 
 // ----------------- MOBIL GOMBOK -----------------
@@ -594,12 +622,14 @@ gridDiv.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "mouse") return; // egérnél amúgy is tiltjuk a rácsot
   // Ne történjen semmi a rácson, és ne is "kattintson" a böngésző
   e.preventDefault();
+  e.stopPropagation();
 });
 
 gridDiv.addEventListener("pointerup", (e) => {
   if (!started) return;
   if (e.pointerType === "mouse") return;
   e.preventDefault();
+  e.stopPropagation();
 });
 
 gridDiv.addEventListener("pointercancel", (e) => {
