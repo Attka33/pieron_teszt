@@ -6,7 +6,6 @@
 <title>Pieron-jellegű figyelemteszt</title>
   <style>
     :root {
-      /* Itt lehet egy helyen állítani a szimbólumok méretét (minták + táblázat) */
       --symbol-font-size: 16px;
       --cell-size: 33px;
       --grid-gap: 3px;
@@ -16,21 +15,18 @@
       height: 100%;
       overflow: hidden;
     }
-/* ---- iOS Safari: duplaérintés (double-tap) zoom / "ugrálás" elleni védelem ---- */
-/* 1) Tap highlight kikapcsolása (esztétika + véletlen villanások csökkentése) */
+/* Tap highlight kikapcsolása (esztétika + véletlen villanások csökkentése) */
 * { -webkit-tap-highlight-color: transparent; }
 
-/* 2) Véletlen kijelölés tiltása és gomb-tap stabilizálás */
+/* Véletlen kijelölés tiltása és gomb-tap stabilizálása */
 button, #grid, #mobile-controls, #practice-row, .cell{
   -webkit-user-select: none;
   user-select: none;
 }
 
-/* 3) Touch gesture-k (zoom/scroll) visszafogása az interaktív területeken */
-/* "manipulation": engedélyezett a normál tap, de tiltja a double-tap zoomot sok esetben. */
+/* Touch gesture-k (zoom/scroll) visszafogása az interaktív területeken */
 button, #grid, #mobile-controls, #practice-row { touch-action: manipulation; }
 
-/* Ha iOS-en még mindig belenagyítana: a rács/próbasor legyen még szigorúbb */
 #grid, #practice-row { touch-action: none; }
 
 body {
@@ -39,7 +35,6 @@ body {
       margin: 0 auto;
       padding: 8px;
       box-sizing: border-box;
-      /* A cél: egy oldalon elférjen – a méretezést JS oldalon biztosítjuk */
       overflow: hidden;
     }
 
@@ -52,6 +47,7 @@ body {
       flex-wrap:wrap;
       margin-top: 2px;
     }
+
     #toggleInstructions{
       padding: 6px 10px;
       border: 1px solid #bbb;
@@ -60,6 +56,7 @@ body {
       cursor: pointer;
       font-size: 0.95rem;
     }
+
     body.instructions-collapsed .task-description{
       display:none;
     }
@@ -69,13 +66,13 @@ body {
   hyphens: auto;
   }
 
-    /* A fő rács (tábla), kezdetben rejtve */
+    /* Fő rács, kezdetben rejtve */
     #grid {
       display: none;                         /* induláskor ne látszódjon */
       grid-template-columns: repeat(20, var(--cell-size));
-      gap: var(--grid-gap);                              /* rácsköz, hogy a keretek ne érjenek össze */
+      gap: var(--grid-gap);                  /* rácsköz, hogy a keretek ne érjenek össze */
       margin-top: 10px;
-      justify-content: center;               /* rács középre igazítása */
+      justify-content: center;
     }
 
     /* Ha a teszt elindul, ezt az osztályt kapja, ekkor jelenik meg */
@@ -83,21 +80,19 @@ body {
       display: grid;
     }
 
-    /* Teszt közben az egérkattintások letiltása (csak billentyűzetes vezérlés) */
+    /* Teszt közben az egérkattintások letiltása */
     @media (pointer: fine) {
       #grid.mouse-disabled {
         pointer-events: none;
       }
     }
 
-    /* Szimbólumok betűtípusa, mérete */
     .symbol {
       font-family: "Segoe UI Symbol", "Noto Sans Symbols", "DejaVu Sans", sans-serif;
       font-size: var(--symbol-font-size);
       line-height: 1;
     }
 
-    /* Egy cella (négyzet) a rácsban */
     .cell {
       border: 0.5px solid #ddd;
       text-align: center;
@@ -112,7 +107,6 @@ body {
       box-sizing: border-box;
     }
 
-    /* Kijelölt cella – fekete keret a kereten BELÜL (nem nő meg a cella) */
     .cell.selected {
       box-shadow: 0 0 0 2px #000 inset;
     }
@@ -129,7 +123,6 @@ body {
       box-shadow: 0 0 0 2px #007bff inset;
     }
 
-    /* Felső sáv: gomb, időcsík, minták */
     #top-bar {
       display: flex;
       justify-content: space-between;
@@ -149,7 +142,6 @@ body {
       opacity: 0.6;
     }
 
-    /* Alsó sáv – jelenleg üres, de meghagyjuk, ha később kellene ide bármi */
     #bottom-bar {
       margin-top: 10px;
       text-align: center;
@@ -181,21 +173,19 @@ body {
   #mobile-controls{ display: flex; }
 }
 
-/* Mobilon kicsit szorosabb térközök */
 @media (max-width: 600px){
   :root{ --grid-gap: 2px; }
   body{ margin: 10px auto; }
   #timeBarContainer{ width: 160px; }
 }
 
-/* A rács és az eredmény overlay közös konténere (desktopon a táblán belül tartja az eredményt) */
+/* A rács és az eredmény overlay közös konténere */
 #grid-wrap{
   position: relative;
   width: fit-content;
   margin: 0 auto;
-}/* Eredmény overlay:
-   - Desktopon: a táblán BELÜL (grid-wrap-on belül) jelenik meg, így nem lóghat ki.
-   - Mobilon: marad teljes képernyős (a jelenlegi jó működés miatt). */
+}
+
 #overlay {
 position: absolute;
   inset: 0;
@@ -223,7 +213,7 @@ background: #222;
   border-radius: 10px;
   width: min(520px, 94%);
   max-height: 94%;
-  overflow: auto; /* kis kijelzőn belül görgethető, de a táblából nem lóg ki */
+  overflow: auto;
   text-align: left;
   box-sizing: border-box;
       opacity: 1;
@@ -242,19 +232,16 @@ background: #222;
       display: inline-block;
     }
 
-    /* Maga a fogyó zöld csík */
     #timeBar {
       position: absolute;
-      right: 0;             /* ITT rögzítjük a jobb oldalhoz */
+      right: 0;         
       top: 0;
       height: 100%;
-      width: 100%;  /* induláskor teljesen tele */
+      width: 100%;
       background: linear-gradient(to right, #4caf50, #8bc34a);
-      transition: width 1s linear; /* szép „folyós” fogyás */
+      transition: width 1s linear;
     }
 
-  
-/* ---- Eredmény táblázat (egyetemi normák) ---- */
 .result-table{
   width: 100%;
   border-collapse: collapse;
@@ -272,11 +259,9 @@ background: #222;
 .grade-cell{
   text-align: center;
   font-weight: 700;
-  border: 2px solid #fff; /* kiemelés */
+  border: 2px solid #fff;
 }
 
-
-    /* Mobilon kicsit kompaktabb eredmény ablak */
     @media (pointer: coarse){
       #overlay-inner{
         width: min(560px, 94%);
@@ -285,7 +270,6 @@ background: #222;
       }
     }
 
-/* ---- Próbasor (minta sor) a főképernyőn ---- */
 #practice-container{
   display: flex;
   align-items: center;
@@ -311,7 +295,7 @@ background: #222;
   opacity: 0.9;
 }
 
-/* Próbasor mobil vezérlők (mindig aktívak touch-on) */
+/* Próbasor mobil vezérlésnél (mindig aktívak) */
 #practice-controls{
   display: none;
   gap: 10px;
@@ -372,7 +356,7 @@ background: #222;
     <div id="practice-row"></div>
 </div>
 
-</div>  <!-- A szimbólumrács (tábla) + eredmény overlay (desktopon a táblán belül marad) -->
+</div>  <!-- A szimbólumrács + eredmény overlay (desktopon a táblán belül marad) -->
   <div id="grid-wrap">
     <div id="grid"></div>
 
@@ -397,24 +381,20 @@ background: #222;
   </div>
 
 <script>
-  // ----------------- PARAMÉTEREK -----------------
+  // PARAMÉTEREK 
   const ROWS = 20;
   const COLS = 20;
   const DURATION_SECONDS = 300; // 5 perc
 
-  // ----------------- EREDMÉNYKÜLDÉS (Google Apps Script Web App) -----------------
-  // Ide másold be a Deploy után kapott "Web app URL"-t (Google Apps Script)
+  // EREDMÉNYKÜLDÉS (Google Apps Script Web App)
+  // Web app URL (Google Apps Script)
   const RESULTS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxMe-JhwR_6DStcjKwYAMtofsMyvvP0ucQwj_93KFFK9V64AqytMUJ9HWkhIs9kWq7I/exec";
-  // „Minták” – ezekre kell figyelni (ezek a céljelek)
   const TARGET_SYMBOLS = ["■", "▲", "○", "◇"];
-
-  // A lehetséges szimbólumok (köztük a céljelek)
   const SYMBOL_POOL = ["■", "▲", "●", "◆", "□", "△", "○", "◇"];
   const NON_TARGET_SYMBOLS = SYMBOL_POOL.filter(s => !TARGET_SYMBOLS.includes(s));
 
   
-  // ----------------- PRÓBASOR (MINTASOR) -----------------
-  // Statikus 20 elemű sor: kipróbálható rajta a billentyűzet (→, SPACE/ENTER) és érintőkijelző (gombok) vezérlés.
+  //  PRÓBASOR
   const PRACTICE_SYMBOLS = ["△","◆","●","◇","□","●","▲","■","◇","◆","●","▲","■","◇","□","◇","△","□","▲","○",
                             "●","△","□","◆","◇","□","●","▲","■","◇","◇","◆","▲","■","○","□","●","▲","◇","△",
                             "◆","◇","□","△","●","■","◇","▲","◆","□","●","◇","▲","■","△","○","●","◇","□","▲",
@@ -439,7 +419,7 @@ background: #222;
       if (practiceSelected[idx]) cell.classList.add("selected");
       if (idx === practiceIndex) cell.classList.add("cursor");
 
-      // Koppintás/kattintás tiltása (próbasorban is csak gomb/billentyű vezérlés)
+      // Érintés/kattintás tiltása (próbasorban is csak gomb/billentyű vezérlés)
       cell.addEventListener("click", (e) => { e.preventDefault(); return false; });
 practiceRowDiv.appendChild(cell);
     });
@@ -458,19 +438,19 @@ practiceRowDiv.appendChild(cell);
     const max = PRACTICE_SYMBOLS.length;
     if (practiceIndex === -1) practiceIndex = 0;
     else if (practiceIndex < max - 1) practiceIndex++;
-    else return; // a próbasornál nincs automatikus "befejezés"
+    else return; // próbasornál nincs automatikus "befejezés"
     updatePracticeCursor();
   }
 
   function practiceToggleCurrent(){
     if (practiceIndex < 0) return;
-    if (practiceSelected[practiceIndex]) return; // ne lehessen visszavonni
+    if (practiceSelected[practiceIndex]) return; // ne lehessen visszavonni a kijelölést
     practiceSelected[practiceIndex] = true;
 
     const el = practiceRowDiv.querySelector(`.cell[data-pindex="${practiceIndex}"]`);
     if (el) el.classList.add("selected");
 
-    // jelölés után automatikus továbbléptetés (mint a tesztben)
+    // jelölés után automatikus továbbléptetés
     practiceMoveNext();
   }
 
@@ -480,11 +460,9 @@ practiceRowDiv.appendChild(cell);
     practiceIndex = 0;
     renderPracticeRow();
 
-    // Touch-on a próba a gombokkal történik (ugyanaz a logika, mint a tesztben).
     if (pBtnSelect) pBtnSelect.addEventListener("click", () => practiceToggleCurrent());
     if (pBtnNext) pBtnNext.addEventListener("click", () => practiceMoveNext());
 
-    // Érintőkijelzőn ne legyen "véletlen kijelölés" / görgetésindítás a próbasoron
     practiceRowDiv.addEventListener("pointerdown", (e) => {
       if (e.pointerType !== "mouse") { e.preventDefault(); e.stopPropagation(); }
     });
@@ -493,15 +471,14 @@ practiceRowDiv.appendChild(cell);
     });
   }
 
-// ----------------- ÁLLAPOTVÁLTOZÓK -----------------
-  let gridData = [];       // a rács cellái: {symbol, isTarget, selected}
-  let started = false;     // fut-e már a teszt
+// ÁLLAPOTVÁLTOZÓK
+  let gridData = [];
+  let started = false;
   let timeLeft = DURATION_SECONDS;
   let timerInterval = null;
-  let currentIndex = -1;   // Billentyűzetes "kurzor" pozíciója (0..ROWS*COLS-1)
-  let anonId = "";        // Kitöltő anonim azonosítója (Startnál kérjük be)
+  let currentIndex = -1;
+  let anonId = "";
 
-  // ----------------- DOM ELEMEK -----------------
   const gridDiv = document.getElementById("grid");
   const startBtn = document.getElementById("startBtn");
   const overlay = document.getElementById("overlay");
@@ -514,12 +491,12 @@ const btnSelect = document.getElementById("btnSelect");
 const btnNext = document.getElementById("btnNext");
 
 function updateMobileControlsState(){
-  const enabled = true; // próbasorhoz is aktív
+  const enabled = true; // próbasornál is aktív
   if (btnSelect) btnSelect.disabled = !enabled;
   if (btnNext) btnNext.disabled = !enabled;
 }
 
-  // Induláskor állítsuk 100%-ra az időcsíkot
+  // Minden indításnál az időcsíkot legyen 100%-on
   timeBar.style.width = "100%";
 
   // Céljelek kiírása, azonos stílussal, mint a táblázatban
@@ -527,21 +504,17 @@ function updateMobileControlsState(){
     .map(s => `<span class="symbol">${s}</span>`)
     .join('&nbsp;&nbsp;&nbsp;');
 
-// ----------------- RESZPONZÍV MÉRETEZÉS -----------------
-// A cellaméretet automatikusan a rendelkezésre álló képernyőterülethez igazítjuk,
-// hogy a 20×20 rács minden eszközön elférjen.
+// RESZPONZÍV MÉRETEZÉS
+// A cellaméret automatikus a rendelkezésre álló képernyőterülethez igazítása,
 function updateResponsiveSizing(){
-  // ha még nincs a DOM-ban, ne számoljunk
   if (!gridDiv) return;
 
   const topBar = document.getElementById("top-bar");
   const bottomBar = document.getElementById("bottom-bar");
-  // A cím valójában h2, ezért ezt mérjük (korábban h1 volt, ami 0 magasságot adott).
   const titleEl = document.querySelector(".instructions-header") || document.querySelector("h2");
   const descEl = document.querySelector(".task-description");
   const mobileControls = document.getElementById("mobile-controls");
 
-  // Biztonsági margó a görgetés elkerülésére (kerekítési hibák, zoom, böngésző UI)
   const safePadding = 52;
 
   const vw = Math.min(window.innerWidth, (window.visualViewport && window.visualViewport.width) ? window.visualViewport.width : window.innerWidth);
@@ -550,23 +523,19 @@ function updateResponsiveSizing(){
   const topH = topBar ? topBar.getBoundingClientRect().height : 0;
   const bottomH = bottomBar ? bottomBar.getBoundingClientRect().height : 0;
   const titleH = titleEl ? titleEl.getBoundingClientRect().height : 0;
-  // A leírás indítás után CSS-ből el van rejtve, ilyenkor a magassága 0 lesz.
   const descH = descEl ? descEl.getBoundingClientRect().height : 0;
   const mobileH = (mobileControls && window.getComputedStyle(mobileControls).display !== "none")
     ? mobileControls.getBoundingClientRect().height
     : 0;
 
-  // A rácsnak maradó terület (a body paddinget is figyelembe vesszük)
   const bodyStyle = window.getComputedStyle(document.body);
   const padX = (parseFloat(bodyStyle.paddingLeft) || 0) + (parseFloat(bodyStyle.paddingRight) || 0);
 
   const availableW = Math.max(160, vw - padX - safePadding);
-  // A rácsnak maradó függőleges terület = viewport - (cím + leírás + topbar + mobilgombok) - biztonsági margó
-  // A #grid margin-top-ját is levonjuk (különben pár px miatt gyakran megjelenik görgetés)
   const gridMarginTop = 10;
   const availableH = Math.max(160, vh - titleH - descH - topH - bottomH - mobileH - gridMarginTop - safePadding);
 
-  // Gap: ha szűk a hely, automatikusan csökkentjük (3 -> 2 -> 1), hogy biztosan elférjen.
+  // Gap: ha szűk a hely, automatikus csökkentés (3 -> 2 -> 1), hogy biztosan elférjen.
   const rootStyle = window.getComputedStyle(document.documentElement);
   const initialGap = parseFloat(rootStyle.getPropertyValue("--grid-gap")) || 3;
   const gapCandidates = [initialGap, 2, 1].filter((v, i, a) => a.indexOf(v) === i);
@@ -581,7 +550,6 @@ function updateResponsiveSizing(){
     }
   }
 
-  // A min cellát lejjebb engedjük (különben kis képernyőn nem fér ki 100%-on)
   const cell = Math.max(10, Math.min(best.cell, 40));
 
   document.documentElement.style.setProperty("--grid-gap", best.gap + "px");
@@ -589,37 +557,33 @@ function updateResponsiveSizing(){
   document.documentElement.style.setProperty("--symbol-font-size", Math.max(10, Math.floor(cell * 0.48)) + "px");
 }
 
-// Resize/orientation változáskor újraszámoljuk (mobilon ez kritikus)
-// iOS Safarin a viewport sokszor "rángatja" a resize-t (cím-/eszköztár fel-le), ezért debouncoljuk.
 let __resizeTimer = null;
 function safeResize(){
   if (__resizeTimer) clearTimeout(__resizeTimer);
   __resizeTimer = setTimeout(() => {
     updateResponsiveSizing();
-    // a próbasor is a cellaméretet használja, ezért újrarendereljük
     if (!started) renderPracticeRow();
   }, 120);
 }
 
 window.addEventListener("resize", safeResize);
 window.addEventListener("orientationchange", () => {
-  // orientationchange után kicsit később stabil a viewport
   setTimeout(safeResize, 250);
 });
 if (window.visualViewport){
   window.visualViewport.addEventListener("resize", safeResize);
 }
 
-// ----------------- MOBIL GOMBOK -----------------
+// Mobil gombok
 if (btnSelect) btnSelect.addEventListener("click", () => { if (!started) { practiceToggleCurrent(); } else { toggleCurrentCell(); } });
 if (btnNext) btnNext.addEventListener("click", () => { if (!started) { practiceMoveNext(); } else { moveToNextCell(); } });
 
-// ----------------- TOUCH VEZÉRLÉS -----------------
-// Fontos: érintőkijelzőn a rácsra koppintás / húzás NEM jelölhet és NEM léptethet.
-// Mobilon a vezérlés kizárólag az alsó gombokkal történik: "Jelöl (✓)" és "Tovább (→)".
+// Érintéses vezérlés 
+// Érintőkijelzőn a rácsra koppintás / húzás NEM jelölhet és NEM léptethet
+// Mobilon a vezérlés kizárólag az alsó gombokkal történhet: "Jelöl (✓)" és "Tovább (→)"
 gridDiv.addEventListener("pointerdown", (e) => {
   if (!started) return;
-  if (e.pointerType === "mouse") return; // egérnél amúgy is tiltjuk a rácsot
+  if (e.pointerType === "mouse") return;
   // Ne történjen semmi a rácson, és ne is "kattintson" a böngésző
   e.preventDefault();
   e.stopPropagation();
@@ -633,10 +597,9 @@ gridDiv.addEventListener("pointerup", (e) => {
 });
 
 gridDiv.addEventListener("pointercancel", (e) => {
-  // nincs teendő
 });
 
-  // ----------------- SEGÉDFÜGGVÉNYÉNY: egyszerű keverő -----------------
+  // Egyszerű keverés
   function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -645,18 +608,16 @@ gridDiv.addEventListener("pointercancel", (e) => {
     return array;
   }
 
-  // ----------------- RÁCS GENERÁLÁSA -----------------
+  // Rács generálás 
   function generateGrid() {
     gridData = [];
     gridDiv.innerHTML = "";
 
-    // ✅ Soronként fix arány: 10 céljel + 10 nem-céljel (COLS=20 esetén)
-    // Ha később a COLS értéke változna, a céljelek száma automatikusan a sor felére igazodik.
+    // Soronként fix arány: 10 céljel + 10 nem-céljel (COLS=20 esetén)
     const targetsPerRow = (COLS === 20) ? 10 : Math.floor(COLS / 2);
     const nonTargetsPerRow = COLS - targetsPerRow;
 
     for (let r = 0; r < ROWS; r++) {
-      // Ebben a sorban előállítjuk a 10 db "true" (cél) + 10 db "false" (nem cél) mintát, majd megkeverjük
       const rowPattern = [
         ...Array.from({ length: targetsPerRow }, () => true),
         ...Array.from({ length: nonTargetsPerRow }, () => false)
@@ -670,16 +631,13 @@ gridDiv.addEventListener("pointercancel", (e) => {
         const pool = isTarget ? TARGET_SYMBOLS : NON_TARGET_SYMBOLS;
         const symbol = pool[Math.floor(Math.random() * pool.length)];
 
-        // Belső adatstruktúra feltöltése
         gridData.push({ symbol, isTarget, selected: false });
 
-        // DOM elem létrehozása
         const cell = document.createElement("div");
         cell.className = "cell symbol";
         cell.textContent = symbol;
         cell.dataset.index = i;
 
-        // Egérkattintás teljes tiltása (csak billentyűvel lehessen jelölni)
         cell.addEventListener("click", (e) => {
           e.preventDefault();
           return false;
@@ -689,15 +647,12 @@ gridDiv.addEventListener("pointercancel", (e) => {
       }
     }
 
-    // Kurzor alaphelyzetben „nincs sehol”
     currentIndex = -1;
     updateCursor();
 
-    // Rács méretezés frissítése
     updateResponsiveSizing();
   }
 
-  // ----------------- KURZOR FRISSÍTÉSE -----------------
   function updateCursor() {
     const cells = gridDiv.querySelectorAll(".cell");
     cells.forEach(c => c.classList.remove("cursor"));
@@ -707,7 +662,6 @@ gridDiv.addEventListener("pointercancel", (e) => {
     }
   }
 
-  // ----------------- AKTUÁLIS CELLA JELÖLÉSE -----------------
   function toggleCurrentCell() {
     if (!started) return;
     if (currentIndex < 0) return;
@@ -716,33 +670,28 @@ gridDiv.addEventListener("pointercancel", (e) => {
     const cellElement = gridDiv.querySelector(`.cell[data-index="${currentIndex}"]`);
     if (!cellElement) return;
 
-    // Ha már egyszer jelölve lett, ne lehessen visszavonni
     if (cellData.selected) {
       return;
     }
 
-    // Jelölés beállítása
     cellData.selected = true;
     cellElement.classList.add("selected");
 
-    // Jelölés után automatikusan a következő cellára lép
     moveToNextCell();
   }
 
-  // ----------------- TOVÁBBLÉPÉS A KÖVETKEZŐ CELLÁRA -----------------
   function moveToNextCell() {
     if (!started) return;
     const cells = gridDiv.querySelectorAll(".cell");
     if (cells.length === 0) return;
 
-    // Ha még nem állunk sehol, az első cellával kezdünk
     if (currentIndex === -1) {
       currentIndex = 0;
     } else if (currentIndex < cells.length - 1) {
-      // Csak jobbra lehet lépni, vissza nem
+      // Csak jobbra lehet lépni
       currentIndex++;
     } else {
-      // Már az utolsó cellán állunk, újabb lépés = automatikus befejezés
+      // Ha már az utolsó cellán állunk -> újabb lépés = automatikus befejezés
       finishTest("auto");
       return;
     }
@@ -750,10 +699,8 @@ gridDiv.addEventListener("pointercancel", (e) => {
     updateCursor();
   }
 
-  // ----------------- TESZT INDÍTÁSA -----------------
-  
-  // ----------------- EGYETEMI NORMÁK SZERINTI MINŐSÍTÉS -----------------
-  // n (átnézett elemszám) és T% (pontosság) alapján ad vissza osztályzatot
+  // Teszt indítása
+  // n (átnézett elemszám) és T% (pontosság) alapján ad vissza minősítést
   function gradeByN(n) {
     if (n < 330) return "gyenge";
     if (n < 360) return "elégséges";
@@ -770,18 +717,13 @@ gridDiv.addEventListener("pointercancel", (e) => {
     return "kiváló";
   }
 
-
-  // ----------------- EREDMÉNYKÜLDÉS SEGÉD -----------------
   function safeSetSendStatus(htmlText) {
     if (!sendStatus) return;
     sendStatus.innerHTML = htmlText;
   }
 
-  // Megpróbálja elküldeni az eredményeket a Google Apps Script Web App URL-re.
-  // Megjegyzés: statikus (GitHub Pages/Netlify) környezetben a "no-cors" mód a legstabilabb,
-  // ezért a válasz tartalmát nem tudjuk kiolvasni, de a kérés jellemzően célba ér.
   async function sendResultsToSheet(payload) {
-    // Ha nincs beállítva az endpoint, ne próbálkozzunk.
+    // Ha nincs beállítva az endpoint, ne próbálkozzon
     if (!RESULTS_ENDPOINT || RESULTS_ENDPOINT.includes("IDE_MÁSOLOD")) {
       safeSetSendStatus(
         '⚠️ <strong>Nincs beállítva a Web app URL.</strong><br>' +
@@ -800,7 +742,7 @@ gridDiv.addEventListener("pointercancel", (e) => {
         body: JSON.stringify(payload)
       });
 
-      // "no-cors" esetén nem tudjuk ellenőrizni a választ, ezért csak tájékoztatunk.
+      // "no-cors" esetén nem lehet ellenőrizni a választ, ezért csak tájékoztatunk
       safeSetSendStatus("✅ Eredmény elküldve.");
     } catch (err) {
       safeSetSendStatus(
@@ -816,8 +758,8 @@ function startTest() {
     if (started) return;
 
     // Anonim azonosító bekérése (kötelező)
-    // Ha a résztvevő Mégse-t nyom, térjünk vissza a főképernyőre.
-    // Üres azonosítóval ne engedjük a továbblépést.
+    // Ha a résztvevő Mégse-t nyom, térjünk vissza a főképernyőre
+    // Üres azonosítóval ne engedjük a továbblépést
     if (!anonId) {
       const entered = window.prompt(
         "Saját születési hónap + Anyja keresztnevének első 2 betűje + kedvenc szám pl.: 04LI3",""
@@ -844,7 +786,7 @@ function startTest() {
       anonId = entered.trim();
     }
 
-    // A teszt tényleges indításakor rejtsük el a próbasort és az instrukciókat
+    // A teszt tényleges indításakor a próbasor és az instrukciók elrejtése
     const pc = document.getElementById('practice-container');
     if (pc) pc.style.display = 'none';
     document.body.classList.add('instructions-collapsed');
@@ -856,7 +798,6 @@ function startTest() {
 
     startBtn.disabled = true;
 
-    // A táblázat most jelenjen meg, és tiltsuk az egeret
     gridDiv.classList.add("visible", "mouse-disabled");
 
     timeLeft = DURATION_SECONDS;
@@ -868,7 +809,7 @@ function startTest() {
     // Időcsík visszatöltése induláskor
     timeBar.style.width = "100%";
 
-    // Másodpercenként csökkentjük az időt, és frissítjük az időcsíkot
+    // Másodpercenként csökken az idő
     timerInterval = setInterval(() => {
       timeLeft--;
 
@@ -884,8 +825,8 @@ function startTest() {
     }, 1000);
   }
 
-  // ----------------- TESZT BEFEJEZÉSE -----------------
-  // reason: "time" (idő lejárt) vagy "auto" (a táblázat végére ért)
+  // Teszt befejezés
+  // ok: idő lejárt vagy a kitöltő a táblázat végére ért
   function finishTest(reason) {
     if (!started && reason !== "time" && reason !== "auto") return;
 
@@ -893,7 +834,6 @@ function startTest() {
     document.body.classList.remove("started");
     updateMobileControlsState();
 
-    // Időzítő leállítása, ha még futna
     if (timerInterval) {
       clearInterval(timerInterval);
       timerInterval = null;
@@ -909,18 +849,14 @@ function startTest() {
       reasonText = "A táblázat végére értél, a teszt automatikusan lezárult.";
     }
 
-    // ----------------- KIÉRTÉKELÉS -----------------
-    // Fontos: a T% és a fő mutatók az *átnézett* (seen) elemszámhoz igazodnak.
-    // A céljelek kihagyását ezért kettéválasztjuk:
-    // - misses_seen: kihagyott céljelek az átnézett tartományban
-    // - misses_unseen: céljelek a még nem átnézett (unseen) tartományban
+    // Kiértékelés
     let hits = 0;             // helyes jelölés az átnézett tartományban
     let misses_seen = 0;      // kihagyott cél az átnézett tartományban
     let misses_unseen = 0;    // kihagyott cél a nem átnézett tartományban (csak információ)
-    let falseAlarms = 0;      // rossz jelölés (nem cél, de kijelölt) – gyakorlatilag csak seen-ben fordulhat elő
+    let falseAlarms = 0;      // rossz jelölés (nem cél, de kijelölt)
 
 
-    // Átnézett elemek száma (n): az utolsó elért index + 1
+    // Átnézett elemek száma (n)
     const itemsSeen = currentIndex >= 0 ? currentIndex + 1 : 0;
 
     // Seen (0..itemsSeen-1)
@@ -932,7 +868,7 @@ function startTest() {
       if (!c.isTarget && c.selected) falseAlarms++;
     }
 
-    // Unseen (itemsSeen..end) – ide már nem jutott el a kitöltő
+    // Unseen (itemsSeen..end)
     for (let i = itemsSeen; i < gridData.length; i++) {
       const c = gridData[i];
       if (!c) continue;
@@ -940,18 +876,17 @@ function startTest() {
     }
 
 
-    // Hibák száma (h): kihagyott céljelek + téves jelölések
+    // Hibák száma (h)
     const h = misses_seen + falseAlarms;
 
-    // Pieron-féle pontosság (T%) az átnézett elemszámhoz viszonyítva
+    // Pontosság (T%)
     const tPercent = itemsSeen > 0 ? ((itemsSeen - h) * 100) / itemsSeen : 0;
 
-    // Egyetemi normák szerinti osztályzatok
+    // Osztályzatok
     const gradeN = gradeByN(itemsSeen);
     const gradeT = gradeByT(tPercent);
 
-    // ----------------- KIEGÉSZÍTŐ MUTATÓK (Sheet oszlopokhoz) -----------------
-// Sebesség (elem/perc) az átnézett elemszám alapján
+// Sebesség (elem/perc)
 const speedEpm = elapsed > 0 ? (itemsSeen / (elapsed / 60)) : 0;
 
 // Hibaarány (összes hiba / átnézett elemszám)
@@ -988,20 +923,18 @@ function fatiguePatternBy20Pct(nSeen) {
   const first = segmentStats(0, part);
   const last = segmentStats(nSeen - part, nSeen);
 
-  const deltaAccPct = (last.segAcc - first.segAcc) * 100; // %-pont
-  // Egyszerű kategorizálás (küszöb: 5 %-pont)
+  const deltaAccPct = (last.segAcc - first.segAcc) * 100;
+  // Küszöb: 5 %-pont
   let label = "stabil";
   if (deltaAccPct <= -5) label = "romló";
   else if (deltaAccPct >= 5) label = "javuló";
-
-  // Kompakt, de információgazdag string a Sheetbe
   return `${label};acc_first=${(first.segAcc*100).toFixed(1)};acc_last=${(last.segAcc*100).toFixed(1)};dAcc=${deltaAccPct.toFixed(1)}`;
 }
 
 const fatigePat = fatiguePatternBy20Pct(itemsSeen);
 
-// Sebesség–pontosság profil (egyszerű kategóriák fix küszöbökkel)
-// Küszöbök: 72 elem/perc ~ 360 elem / 5 perc, pontosság: 95%
+// Sebesség–pontosság profil
+// Küszöbök: 72 elem/perc ~ 360 elem / 5 perc
 function speedAccuracyProfile(spdEpm, tPct) {
   const fast = spdEpm >= 72;
   const accurate = tPct >= 95;
@@ -1013,7 +946,7 @@ function speedAccuracyProfile(spdEpm, tPct) {
 
 const spdAccProfil = speedAccuracyProfile(speedEpm, tPercent);
 
-// ----------------- EREDMÉNYEK ÖSSZEÁLLÍTÁSA ÉS KÜLDÉSE -----------------
+// Eredmények összeállítása és küldése
 const payload = {
   timestamp: new Date().toISOString(),
   anon_id: anonId || "",
@@ -1072,29 +1005,24 @@ const payload = {
       </table>
     `;
 
-    // Overlay megjelenítése
     overlay.style.display = "flex";
 
-    // Eredmények elküldése a Sheetbe (ha be van állítva)
     sendResultsToSheet(payload);
   }
-    // „Teszt indítása” gomb újra engedélyezése
     startBtn.disabled = false;
 
-    // Időcsík azonnali visszatöltése 100%-ra
     timeBar.style.width = "100%";
 
-    // Új, véletlen táblázat ugyanazzal az aránnyal
     generateGrid();
 
     // Új teszt előtt megint ne látszódjon, csak indítás után
     gridDiv.classList.remove("visible", "mouse-disabled");
 
-  // ----------------- BILLENTYŰZETKEZELÉS -----------------
-  // SPACE / ENTER: jelölés (végleges), jobbra nyíl: léptetés
+  // Billentyűzet
+  // SPACE / ENTER: jelölés, jobbra nyíl: léptetés
   
   document.addEventListener("keydown", (e) => {
-    // Ha a teszt NEM fut, akkor a próbasort vezéreljük (→, SPACE/ENTER)
+    // Ha a teszt nem fut, akkor a próbasor vezérlése
     if (!started) {
       if (e.key === "ArrowRight") {
         e.preventDefault();
@@ -1116,7 +1044,6 @@ const payload = {
     }
   });
 
-// ----------------- INDULÁSKOR: TÁBLA ELŐKÉSZÍTÉSE -----------------
   updateResponsiveSizing();
   generateGrid();
     initPractice();
